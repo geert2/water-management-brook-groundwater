@@ -1,0 +1,176 @@
+# Indoor LoRa gateway: receives node packets, exposes them to Home Assistant and
+# uploads to openSenseMap.
+#
+# Sources: ESPHome packet_transport [R2], sx126x [R1], http_request [R6]; openSenseMap upload [R26][R27][R28]
+# (see docs/REFERENCES.md).
+#
+# To add a well:
+#   1. add its secrets to secrets.yaml and a `wN_*` block under `substitutions:`
+#   2. add a provider entry under `packet_transport:`
+#   3. add a package entry under `packages:`
+
+substitutions:
+  offline_after_ms: "9000000"      # node counted offline after 2.5 h without a packet
+
+  # Well 1
+  w1_depth_offset: !secret well_1_sensor_depth_m
+  w1_box_id: !secret well_1_osem_box_id
+  w1_token: !secret well_1_osem_token
+  w1_depth_id: !secret well_1_osem_depth_id
+  w1_ec_id: !secret well_1_osem_ec_id
+  w1_temp_id: !secret well_1_osem_temp_id
+
+  # Well 2
+  w2_depth_offset: !secret well_2_sensor_depth_m
+  w2_box_id: !secret well_2_osem_box_id
+  w2_token: !secret well_2_osem_token
+  w2_depth_id: !secret well_2_osem_depth_id
+  w2_ec_id: !secret well_2_osem_ec_id
+  w2_temp_id: !secret well_2_osem_temp_id
+
+packages:
+  well1: !include
+    file: well-package.yaml
+    vars:
+      well: w1
+      well_label: "Well 1"
+      node_name: water-well-node-1
+      depth_offset: ${w1_depth_offset}
+      box_id: ${w1_box_id}
+      token: ${w1_token}
+      depth_id: ${w1_depth_id}
+      ec_id: ${w1_ec_id}
+      temp_id: ${w1_temp_id}
+  well2: !include
+    file: well-package.yaml
+    vars:
+      well: w2
+      well_label: "Well 2"
+      node_name: water-well-node-2
+      depth_offset: ${w2_depth_offset}
+      box_id: ${w2_box_id}
+      token: ${w2_token}
+      depth_id: ${w2_depth_id}
+      ec_id: ${w2_ec_id}
+      temp_id: ${w2_temp_id}
+
+esphome:
+  name: water-well-gateway
+  friendly_name: "Groundwater Gateway"
+
+esp32:
+  variant: esp32s3
+  board: esp32-s3-devkitc-1
+  flash_size: 8MB
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    # OTA is encrypted with the same key as the API
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Groundwater Gateway"
+    password: !secret ap_password
+
+captive_portal:
+
+http_request:
+  useragent: esphome/groundwater-gateway
+  timeout: 10s
+  watchdog_timeout: 20s
+
+spi:
+  clk_pin: GPIO9
+  mosi_pin: GPIO10
+  miso_pin: GPIO11
+
+sx126x:
+  id: lora_radio
+  cs_pin: GPIO8
+  rst_pin: GPIO12
+  busy_pin: GPIO13
+  dio1_pin: GPIO14
+  hw_version: sx1262
+  modulation: LORA
+  frequency: 868100000
+  bandwidth: 125_0kHz
+  spreading_factor: 9
+  coding_rate: CR_4_5
+  pa_power: 14
+  rf_switch: true
+  tcxo_voltage: 1_8V   # Heltec V3 TCXO, as in ESPHome's device page [R10]
+  tcxo_delay: 5ms
+  crc_enable: true
+
+# A receiver needs the key of each provider (node) it listens to [R2].
+packet_transport:
+  - platform: sx126x
+    id: lora_transport
+    providers:
+      - name: water-well-node-1
+        encryption: !secret lora_encryption_key
+      - name: water-well-node-2
+        encryption: !secret lora_encryption_key
+
+sensor:
+  - platform: wifi_signal
+    name: "Gateway Wi-Fi Signal"
+    update_interval: 60s
+    entity_category: diagnostic
+
+# ==========================================
+# openSenseMap upload (one call per received packet)
+# ==========================================
+script:
+  - id: upload_to_opensensemap
+    mode: queued
+    max_runs: 5
+    parameters:
+      box_id: string
+      token: string
+      depth_sensor_id: string
+      ec_sensor_id: string
+      temp_sensor_id: string
+      depth_val: float
+      ec_val: float
+      temp_val: float
+    then:
+      - http_request.post:
+          url: !lambda 'return "https://api.opensensemap.org/boxes/" + box_id + "/data";'
+          request_headers:   # not `headers` [R6]
+            Content-Type: application/json
+            # openSenseMap expects the box access token as-is (no "Bearer " prefix) [R26][R28]
+            Authorization: !lambda 'return token;'
+          body: !lambda |-
+            // Only valid values are sent: a NaN would make the whole JSON invalid.
+            std::string p = "[";
+            auto add = [&](const std::string &id, float v, const char *fmt) {
+              if (isnan(v)) return;
+              char buf[96];
+              snprintf(buf, sizeof(buf), fmt, id.c_str(), v);
+              if (p.size() > 1) p += ",";
+              p += buf;
+            };
+            add(depth_sensor_id, depth_val, R"({"sensor":"%s","value":%.3f})");
+            add(ec_sensor_id,    ec_val,    R"({"sensor":"%s","value":%.0f})");
+            add(temp_sensor_id,  temp_val,  R"({"sensor":"%s","value":%.2f})");
+            p += "]";
+            return p;
+          on_response:
+            then:
+              - lambda: |-
+                  if (response->status_code >= 300)
+                    ESP_LOGW("osem", "openSenseMap upload failed, HTTP %d", response->status_code);
+          on_error:
+            then:
+              - lambda: 'ESP_LOGW("osem", "openSenseMap upload failed (network error)");'

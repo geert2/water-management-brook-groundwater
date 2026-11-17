@@ -1,0 +1,12 @@
+# Example node using the external ADS1115 for the depth channel.
+# Copy it, rename node_name, and (if used with the gateway) add the node there.
+substitutions:
+  node_name: water-well-node-3
+  friendly_name: "Well Node 3 (ADS1115 example)"
+  sleep_minutes: "60"
+  # shunt_ohm: "100.0"
+  # ads_gain: "2.048"      # 100 ohm shunt: 2x finer resolution
+
+packages:
+  base: !include common-well-node.yaml
+  depth_adc: !include depth-adc-ads1115.yaml
