@@ -11,6 +11,13 @@
 
 substitutions:
   offline_after_ms: "9000000"      # node counted offline after 2.5 h without a packet
+  low_battery_v: "3.4"             # QC flag 8 below this voltage (same value as the node's low_battery_v)
+  tl136_range_m: "5.0"             # full-scale range of the TL-136 (0-5 m model)
+  ec_max_us: "2000"                # DFRobot SEN0244 is rated 0-1000 ppm, about 2000 uS/cm [R19]; above this EC is not published
+
+  # ---- Calibration per well (see docs/field-deployment-guide.md, sections 3 and 5) ----
+  # Change a value, re-flash THE GATEWAY over Wi-Fi; the node is never touched.
+  # Set depth_calibrated / ec_calibrated to "1" when the numbers are really yours (clears QC flags 32 / 16).
 
   # Well 1
   w1_depth_offset: !secret well_1_sensor_depth_m
@@ -19,6 +26,13 @@ substitutions:
   w1_depth_id: !secret well_1_osem_depth_id
   w1_ec_id: !secret well_1_osem_ec_id
   w1_temp_id: !secret well_1_osem_temp_id
+  w1_shunt_ohm: "100.0"            # MEASURE your resistor with a multimeter
+  w1_zero_offset_m: "0.0"          # true column minus displayed column, from a dip-meter comparison
+  w1_span_scale: "1.0"             # 1.0 = nominal 4-20 mA span
+  w1_ec_gain: "1.0"
+  w1_ec_offset: "0.0"
+  w1_depth_calibrated: "0"
+  w1_ec_calibrated: "0"
 
   # Well 2
   w2_depth_offset: !secret well_2_sensor_depth_m
@@ -27,6 +41,13 @@ substitutions:
   w2_depth_id: !secret well_2_osem_depth_id
   w2_ec_id: !secret well_2_osem_ec_id
   w2_temp_id: !secret well_2_osem_temp_id
+  w2_shunt_ohm: "100.0"
+  w2_zero_offset_m: "0.0"
+  w2_span_scale: "1.0"
+  w2_ec_gain: "1.0"
+  w2_ec_offset: "0.0"
+  w2_depth_calibrated: "0"
+  w2_ec_calibrated: "0"
 
 packages:
   well1: !include
@@ -41,6 +62,13 @@ packages:
       depth_id: ${w1_depth_id}
       ec_id: ${w1_ec_id}
       temp_id: ${w1_temp_id}
+      shunt_ohm: ${w1_shunt_ohm}
+      zero_offset_m: ${w1_zero_offset_m}
+      span_scale: ${w1_span_scale}
+      ec_gain: ${w1_ec_gain}
+      ec_offset: ${w1_ec_offset}
+      depth_calibrated: ${w1_depth_calibrated}
+      ec_calibrated: ${w1_ec_calibrated}
   well2: !include
     file: well-package.yaml
     vars:
@@ -53,6 +81,13 @@ packages:
       depth_id: ${w2_depth_id}
       ec_id: ${w2_ec_id}
       temp_id: ${w2_temp_id}
+      shunt_ohm: ${w2_shunt_ohm}
+      zero_offset_m: ${w2_zero_offset_m}
+      span_scale: ${w2_span_scale}
+      ec_gain: ${w2_ec_gain}
+      ec_offset: ${w2_ec_offset}
+      depth_calibrated: ${w2_depth_calibrated}
+      ec_calibrated: ${w2_ec_calibrated}
 
 esphome:
   name: water-well-gateway

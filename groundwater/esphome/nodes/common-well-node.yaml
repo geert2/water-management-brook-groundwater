@@ -11,17 +11,14 @@ substitutions:
   sleep_minutes: "60"            # time between readings (a 0-30 s random jitter is added)
   low_battery_v: "3.4"           # below this, skip measuring and sleep longer (ignored if the reading is < 2 V, see script)
   low_battery_sleep_minutes: "360"
-  warmup: 700ms                  # extra settling time after boot (Vext is already on since early boot)
+  warmup: 1000ms                 # extra settling time after boot (Vext and the boost converter are already on since early boot).
+                                 # The TL-136 loop needs to settle; verify on the bench (the Meetbeek set waits 3 s).
   ds18b20_wait: 900ms            # DS18B20 12-bit conversion takes up to 750 ms [R23]
   tx_wait: 1500ms                # airtime + margin before the radio sleeps. Semtech AN1200.13 formula [R22]:
                                  # 30-110 byte frames take about 0.23-0.6 s at SF9 / 125 kHz / CR 4/5
-  # --- depth channel (TL-136, 4-20 mA across a shunt resistor) ---
-  shunt_ohm: "100.0"             # 100 ohm keeps 20 mA (2.0 V) inside the ESP32-S3 ADC range
-  zero_offset_m: "0.0"           # add after comparing with a manual dip meter
-  span_scale: "1.0"              # multiplies the 0-5 m span (1.0 = nominal)
-  # --- EC channel ---
-  ec_gain: "1.0"                 # from the calibration procedure in docs/field-deployment-guide.md
-  ec_offset: "0.0"
+  # Calibration (shunt value, zero offset, span, EC gain/offset) is NOT done here any more.
+  # The node sends RAW voltages; the gateway converts them (esphome/gateway/water-well-gateway.yaml),
+  # so recalibrating never needs a USB visit to the well. Idea taken from the Meetbeek set.
   # --- battery divider on the Heltec V3 (390k/100k = x4.9) [R12] ---
   vbat_scale: "4.9"              # calibrate against a multimeter; ESPHome's device page uses 2.0 [R10]
   # ADC_Ctrl (GPIO37) polarity DEPENDS ON THE BOARD REVISION [R11][R13]:
@@ -44,6 +41,7 @@ esphome:
     - priority: 750
       then:
         - output.turn_on: vext_power
+        - output.turn_on: boost_power   # MT3608 input from the battery through the MOSFET switch (GPIO7)
         - lambda: 'delay(30);'   # let the devices power up before they are probed
     # Normal measurement cycle once everything is set up.
     - priority: -100
@@ -94,12 +92,13 @@ packet_transport:
     sensors:
       # Short broadcast IDs keep the frame small (shorter airtime, less energy).
       # The gateway maps these with `remote_id:`.
-      - id: water_column_m
-        broadcast_id: d
+      # RAW values: the gateway applies calibration and temperature compensation.
+      - id: depth_voltage            # volts across the shunt (depth-adc-*.yaml)
+        broadcast_id: vd
+      - id: ec_voltage               # raw EC module output, volts
+        broadcast_id: ve
       - id: groundwater_temp_c
         broadcast_id: t
-      - id: ec_compensated_us
-        broadcast_id: ec
       - id: battery_voltage_v
         broadcast_id: v
       # BME280 inside the enclosure: air temperature, pressure, humidity
@@ -109,12 +108,21 @@ packet_transport:
         broadcast_id: bp
       - id: enclosure_humidity
         broadcast_id: bh
+      # Sequence number, LAST in the packet: the gateway counts lost readings and node resets
+      # and starts its calculations when it arrives.
+      - id: tx_seq
+        broadcast_id: "n"
 
 output:
   - platform: gpio
     pin: GPIO36
     id: vext_power
     inverted: ${vext_active_low}   # "true": LOW = ON, HIGH = OFF
+  # Boost converter (MT3608) power switch: GPIO7 HIGH -> N-MOSFET on -> P-MOSFET on -> BAT+ reaches
+  # the MT3608 input. A 100 k pull-down keeps it OFF during deep sleep. See docs/wiring.md section 2.
+  - platform: gpio
+    pin: GPIO7
+    id: boost_power
   - platform: gpio
     pin: GPIO37
     id: vbat_adc_enable
@@ -160,26 +168,11 @@ sensor:
     accuracy_decimals: 2
     update_interval: never
 
-  # 2. Water column above the sensor (TL-136 0-5 m, 4-20 mA across ${shunt_ohm} ohm).
-  #    The shunt voltage `depth_voltage` comes from depth-adc-esp.yaml or
-  #    depth-adc-ads1115.yaml (chosen in the node file).
-  - platform: template
-    id: water_column_m
-    name: "Water Column Height"
-    unit_of_measurement: "m"
-    accuracy_decimals: 3
-    update_interval: never
-    lambda: |-
-      float v = id(depth_voltage).state;
-      if (isnan(v)) return NAN;
-      float i_ma = v / ${shunt_ohm} * 1000.0f;
-      // Outside 3.5-22 mA means a broken wire, a short or a boost fault.
-      if (i_ma < 3.5f || i_ma > 22.0f) return NAN;
-      float depth = (i_ma - 4.0f) / 16.0f * 5.0f;
-      depth = depth * ${span_scale} + ${zero_offset_m};
-      return depth < -0.1f ? NAN : depth;
+  # 2. Depth channel: the raw shunt voltage `depth_voltage` comes from depth-adc-esp.yaml or
+  #    depth-adc-ads1115.yaml (chosen in the node file) and is sent as it is.
 
-  # 3. Electrical conductivity (DFRobot SEN0244 analog TDS probe, 25 C compensation 1 + 0.02*(T-25) [R19])
+  # 3. Electrical conductivity: raw voltage of the DFRobot SEN0244 module [R19]; the gateway applies the
+  #    TDS curve, 25 C compensation and your two-point calibration.
   - platform: adc
     pin: GPIO6
     id: ec_voltage
@@ -189,21 +182,16 @@ sensor:
     update_interval: never
     internal: true
 
+  # 3b. Sequence number. RTC memory survives deep sleep but not a power loss, so a counter that
+  #     restarts at 1 tells the gateway the node lost power. Local static, no flash wear.
   - platform: template
-    id: ec_compensated_us
-    name: "Electrical Conductivity (EC25)"
-    unit_of_measurement: "µS/cm"
-    accuracy_decimals: 0
+    id: tx_seq
     update_interval: never
+    internal: true
     lambda: |-
-      float v = id(ec_voltage).state;
-      if (isnan(v)) return NAN;
-      float temp = id(groundwater_temp_c).state;
-      if (isnan(temp)) temp = 12.0f;   // fallback if the DS18B20 failed
-      float comp_v = v / (1.0f + 0.02f * (temp - 25.0f));
-      // DFRobot cubic TDS curve; TDS = EC / 2, so the 0.5 and 2.0 factors cancel.
-      float ec = 133.42f * comp_v * comp_v * comp_v - 255.86f * comp_v * comp_v + 857.39f * comp_v;
-      return ec * ${ec_gain} + ${ec_offset};
+      static RTC_DATA_ATTR uint32_t seq = 0;
+      seq++;
+      return (float) seq;
 
   # 4. Node battery voltage (read at rest, before the boost converter loads the cell)
   - platform: adc
@@ -238,7 +226,9 @@ script:
               float v = id(battery_voltage_v).state;
               return !isnan(v) && v > 2.0f && v < ${low_battery_v};
           then:
+            - output.turn_off: boost_power
             - output.turn_off: vext_power     # Vext has been on since boot
+            - component.update: tx_seq
             - component.update: lora_transport
             - delay: ${tx_wait}
             - sx126x.set_mode_sleep:
@@ -248,16 +238,17 @@ script:
 
       # Normal cycle
       - output.turn_on: vext_power         # already on; harmless
+      - output.turn_on: boost_power        # already on; harmless
       - delay: ${warmup}
       - component.update: bme280_hub
       - component.update: groundwater_temp_c
       - component.update: depth_voltage    # starts the (ADS1115) conversion
       - component.update: ec_voltage
       - delay: ${ds18b20_wait}             # DS18B20 / BME280 / ADS1115 results arrive meanwhile
-      - component.update: water_column_m   # needs depth_voltage
-      - component.update: ec_compensated_us # needs the temperature
+      - output.turn_off: boost_power
       - output.turn_off: vext_power
-      - component.update: lora_transport    # broadcast all four values
+      - component.update: tx_seq
+      - component.update: lora_transport    # broadcast the raw values + sequence number
       - delay: ${tx_wait}
       - sx126x.set_mode_sleep:
       - deep_sleep.enter:

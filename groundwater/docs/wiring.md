@@ -18,7 +18,7 @@
 * Voltage across the shunt: 4 mA = 0.40 V (0 m), 20 mA = 2.00 V (5 m). This stays inside the ESP32-S3 ADC range, unlike 160 Ω (3.2 V).
 * The **1 kΩ + zener** protect `GPIO5`. If the transmitter fails short onto the 18 V rail, the zener clamps the pin near 3.6 V and the 1 kΩ limits the current (about 15 mA). Without them an ESP32-S3 pin would see up to 18 V.
 * Check the zener's leakage near 2 V (should be negligible). If the reading at 20 mA is more than about 10 mV low, use a TVS or a BAT54S Schottky clamp (one diode to `GND`, one to `3V3`) instead.
-* The firmware converts the shunt voltage to current with `shunt_ohm` (default 100.0). Measure your actual resistor and set `shunt_ohm: "100.3"` (for example) in the node file.
+* The **gateway** converts the shunt voltage (sent raw by the node) to current with `wN_shunt_ohm` (default 100.0). Measure your actual resistor and set `w1_shunt_ohm: "100.3"` (for example) in `esphome/gateway/water-well-gateway.yaml`.
 * **Valid range:** 3.5 mA to 22 mA. Outside it the node reports *unavailable* (broken wire, short, boost fault).
 
 ### Optional: ADS1115 for the depth channel (built into the firmware)
@@ -40,32 +40,39 @@ The ESP32-S3 ADC reads up to about 3.1 V at 12 dB attenuation [R17], is less acc
 4. Range: `ads_gain: "4.096"` (default) works for 100 Ω and 160 Ω; with 100 Ω you can use `"2.048"` for twice the resolution (full-scale +/-2.048 V, the signal peaks at 2.0 V).
 
 ### Using a 160 Ω shunt instead
-It works if your water column stays below about 4.8 m (the ESP32-S3 ADC saturates near 3.1 V [R17][R3], which is about 19.5 mA). Set `shunt_ohm: "160.0"` in the node file. Trade-offs: the top of the range is less linear, a fault current above about 19.5 mA reads as the maximum instead of "unavailable", and the 3.6 V zener sits close to the 3.2 V full-scale signal, so prefer a **BAT54S Schottky clamp** (one diode to `GND`, one to `3V3`). With the ADS1115 (±4.096 V range) 160 Ω also works, but 100 Ω leaves more margin.
+It works if your water column stays below about 4.8 m (the ESP32-S3 ADC saturates near 3.1 V [R17][R3], which is about 19.5 mA). Set `wN_shunt_ohm: "160.0"` in the gateway file. Trade-offs: the top of the range is less linear, a fault current above about 19.5 mA reads as the maximum instead of "unavailable", and the 3.6 V zener sits close to the 3.2 V full-scale signal, so prefer a **BAT54S Schottky clamp** (one diode to `GND`, one to `3V3`). With the ADS1115 (±4.096 V range) 160 Ω also works, but 100 Ω leaves more margin.
 
 ## 2. Power
 
+![Boost converter power switch](img/boost-switch.svg)
+
 ```text
 18650 --> Heltec battery connector --> 3.3 V regulator --> Vext switch (GPIO36 LOW = ON)
-                                                              |
-                          +-----------------------------------+--------------+
-                          |                                   |              |
-                  [220-470 uF] + MT3608 IN                 EC module    DS18B20 (+4.7 k pull-up to GPIO4)
-                          |
-                      MT3608 OUT = 18.0 V  --> TL-136 V+
+   |                                                          |
+   |                                +-------------------------+-----------+
+   |                                |                         |           |
+   |                             EC module    DS18B20 (+4.7 k pull-up)  BME280 / ADS1115
+   |
+   +--> AO3401 P-MOSFET switch (gate driven by 2N7002, GPIO7 HIGH = ON)
+            |
+        [220-470 uF] + MT3608 IN --> MT3608 OUT = 18.0 V --> TL-136 V+
 ```
 
+* **Why a separate switch:** the MT3608 now runs from the **battery** through its own MOSFET, not from `Vext`. The loop is the biggest load: 20 mA at 18 V is about 0.36 W, which at roughly 85 % boost efficiency (my assumption) is about 130 mA from 3.3 V or about 115 mA from a 3.7 V cell. Feeding it from `Vext` puts that current through the board's 3.3 V regulator and Vext switch, whose current rating I could not confirm; feeding it from the battery avoids that, and the loop can be switched without the probes. Idea and circuit taken from the Meetbeek set (P-MOSFET + N-MOSFET stage). The old design ran the MT3608 input from `Vext`; if you built that, move the MT3608 input to the MOSFET output and wire `GPIO7`.
+* **Switch circuit:** `BAT+` to the AO3401 **source**; AO3401 **drain** to the MT3608 `IN+`; AO3401 **gate** to `BAT+` through 100 kΩ, and to the 2N7002 **drain**; 2N7002 **source** to `GND`; 2N7002 **gate** to `GPIO7` through 100 Ω, with a 100 kΩ pull-down to `GND`. `GPIO7` HIGH turns the boost converter on; during deep sleep the pull-down keeps it off.
+* **The MOSFET is a part to verify:** the AO3401 must have a gate threshold below about 1.5 V at `Vgs = -3 V` so it is fully on at a 3.0 V battery. Check its datasheet for `Rds(on)` at `Vgs = -2.5 V` (it is specified for 2.5 V operation). Test the switched-off state with a multimeter: the MT3608 `IN+` must be 0 V while the node sleeps.
 * The 220-470 µF capacitor at the boost input is a precaution against the start-up current spike browning out the ESP32. The MT3608 has internal soft start [R20], so this is a cheap safeguard rather than a fix for a known fault.
 * The TL-136 is listed with a 12 to 32 V supply [R21]; at 18 V a 160 Ω shunt (3.2 V at 20 mA) still leaves about 14.8 V. Check the label of your unit.
 * Set the MT3608 to 18.0 V **before** connecting the TL-136, and re-check after transport (the trimmer drifts).
-* `Vext` is switched on very early at boot (before the sensors are set up), because the BME280, ADS1115 and DS18B20 are detected once during start-up and must already have power.
-* Active energy is dominated by the boost converter. Keep the `warmup` time as short as the transmitter allows (measure how fast the reading settles).
-* **Optional improvement (not in the firmware):** switch the boost converter with its own MOSFET so the EC and temperature probes can be read while the 18 V loop is off. This removes possible stray current in the water and saves energy.
+* `Vext` and the boost switch are both turned on very early at boot (before the sensors are set up), because the BME280, ADS1115 and DS18B20 are detected once during start-up and must already have power.
+* Active energy is dominated by the boost converter. Keep the `warmup` time as short as the transmitter allows (measure how fast the reading settles; the default is 1000 ms, the Meetbeek set waits 3 s).
 
 ## 3. Pin summary
 
 | Function | Heltec V3 pin | Notes |
 | :--- | :--- | :--- |
 | Vext enable | `GPIO36` | LOW = sensor rail ON |
+| Boost switch | `GPIO7` | HIGH = MT3608 input powered, via 2N7002 + AO3401 |
 | Depth signal | `GPIO5` (ADC1) | via 1 kΩ, zener, 100 nF |
 | EC signal | `GPIO6` (ADC1) | analog module output |
 | DS18B20 data | `GPIO4` | 4.7 kΩ to `Vext` |

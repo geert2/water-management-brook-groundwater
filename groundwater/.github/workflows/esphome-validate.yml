@@ -1,0 +1,31 @@
+name: Validate ESPHome configs
+on:
+  push:
+  pull_request:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ESPHome
+        run: pip install esphome
+      - name: Create CI secrets
+        working-directory: esphome
+        run: |
+          sed "s|REPLACE_WITH_32_BYTE_BASE64_KEY_HERE==|$(openssl rand -base64 32)|" secrets.yaml.example > secrets.yaml
+          ./sync-secrets.sh
+      - name: Validate configs
+        working-directory: esphome
+        run: |
+          for f in nodes/water-well-node-*.yaml gateway/water-well-gateway.yaml; do
+            echo "::group::$f"
+            esphome config "$f" > /dev/null
+            echo "::endgroup::"
+          done
+      # Compiling takes several minutes; enable it if you want to catch C++ errors in CI:
+      # - name: Compile
+      #   working-directory: esphome
+      #   run: esphome compile nodes/water-well-node-1.yaml && esphome compile gateway/water-well-gateway.yaml

@@ -17,6 +17,7 @@ Build one of these units for each observation well (piezometer) you want to moni
 | [ ] | **BME280 module** *(optional)* | BME280 breakout, 3.3 V, I²C (4 pins). Check it is a real BME280 (with humidity) and not a BMP280. | 1 | €4 - €6 | TinyTronics, Otronic, AliExpress |
 | [ ] | **Shunt Resistor** | **100 Ω** (or 160 Ω, see `docs/wiring.md`) metal film, **0.1 %** (25 ppm), 0.25 W | 1 | €0.50 | Gotron, Mouser, Farnell |
 | [ ] | **Input Protection** | 1 kΩ resistor, **3.6 V zener** (e.g. BZX84C3V6 or 1N5227B), 100 nF ceramic capacitor | 1 set | €0.50 | Gotron, Otronic |
+| [ ] | **Boost power switch** | AO3401 P-MOSFET (SOT-23), 2N7002 N-MOSFET (SOT-23), 2 x 100 kΩ, 1 x 100 Ω (0.25 W). Switches the MT3608 input from the battery | 1 set | €1 | Gotron, Otronic, Mouser |
 | [ ] | **Boost Input Capacitor** | 220 - 470 µF low-ESR electrolytic, ≥ 10 V | 1 | €0.50 | Gotron, Otronic |
 | [ ] | **Pull-Up Resistor** | 4.7 kΩ resistor (0.25 W, for DS18B20 data line) | 1 | €0.10 | Gotron *(often included with DS18B20)* |
 | [ ] | **Battery & Holder** | **Protected** 18650 Li-Ion cell (3000 mAh+, e.g. Samsung 35E with protection) + 1x 18650 holder | 1 | €8 - €12 | TinyTronics, NKON |
@@ -70,4 +71,4 @@ One gateway receives LoRa packets from all neighbouring wells and uploads them t
 * **Check TL-136 range & output:** choose **0-5 m** (or 0-4 m), **4-20 mA** and a **vented** cable. Do not buy the 0-10 V or RS485 versions; the firmware assumes a 4-20 mA loop. Check the minimum supply voltage (usually 9-12 V; the 18 V boost covers this).
 * **Use a protected 18650:** the Heltec board charges the cell but has no deep-discharge cut-off.
 * **Heat-shrink type matters:** ordinary thin-wall heat-shrink does not seal against water pressure. Look for **adhesive-lined** / **dual-wall** (*lijmgevuld* / *met lijmlaag*).
-* **Shunt value:** the firmware default is **100 Ω**. If you use a different value, set `shunt_ohm` in the node file. 160 Ω also works with the ESP32 ADC as long as the water column stays below about 4.8 m (20 mA would give 3.2 V, above the ADC's usable range); see `docs/wiring.md`.
+* **Shunt value:** the firmware default is **100 Ω**. If you use a different value, set `wN_shunt_ohm` in the gateway file (the calibration lives in the gateway). 160 Ω also works with the ESP32 ADC as long as the water column stays below about 4.8 m (20 mA would give 3.2 V, above the ADC's usable range); see `docs/wiring.md`.

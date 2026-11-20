@@ -60,8 +60,18 @@ Validated with ESPHome 2026.10.2 (`esphome config`, zero warnings) for both node
 * **Correction:** TL-136 supply is listed as 12 to 32 V, not 9 to 12 V. EC sensor accuracy is ±10 % of full scale. The input capacitor on the boost converter is a precaution (the MT3608 has soft start).
 * `[R#]` tags added in the YAML comments, README, BOM, wiring notes and field guide.
 
+## Ideas taken from the Meetbeek set (20 November 2026)
+Compared with the Grote Beek set (`meetbeek`), four things were adopted. All four configs still pass `esphome config` with zero warnings; the C++ is not compiled and nothing was tested on hardware.
+* **Calibration in the gateway.** The node now sends the raw shunt voltage (`vd`) and raw EC voltage (`ve`); `water-well-gateway.yaml` holds `wN_shunt_ohm`, `wN_zero_offset_m`, `wN_span_scale`, `wN_ec_gain`, `wN_ec_offset`. Recalibrating is a gateway re-flash over Wi-Fi, not a USB visit. The node substitutions `shunt_ohm`, `zero_offset_m`, `span_scale`, `ec_gain`, `ec_offset` no longer exist.
+* **Packet counter, loss and reset counters.** The node sends a counter (`n`, kept in RTC memory through deep sleep). The gateway counts gaps (*Readings Lost*) and counter restarts (*Node Resets*). The counter also starts the gateway's calculation and the openSenseMap upload.
+* **QC flags.** New *QC Flags* sensor per well (bits: 1 loop out of range, 2 EC invalid, 4 temperature invalid, 8 battery low, 16 EC uncalibrated, 32 depth uncalibrated) and a `ec_max_us` limit (2000 µS/cm) above which EC is not published or uploaded. Home Assistant card and README updated.
+* **MOSFET switch for the MT3608** (`GPIO7`, AO3401 + 2N7002, input from the battery). The loop no longer loads the Vext rail. New diagram `docs/img/boost-switch.svg`; the overview diagram, wiring notes, BOM and field guide are updated. `warmup` default changed from 700 ms to 1000 ms to give the loop time to settle (verify on the bench).
+* Not adopted: the second (duplicate) transmission, the ultrasonic cross-check and the turbidity sensor (not relevant for a well), and the 869.525 MHz sub-band (the 868.1 MHz settings stay; see the Meetbeek review notes).
+* Entities that changed: *Water Column Height* and *Electrical Conductivity* are now calculated in the gateway (same names, so Home Assistant history continues). New diagnostic entities: *Depth Shunt Voltage*, *EC Raw Voltage*, *Packet Counter*, *Level Loop Current*, *QC Flags*, *Readings Lost*, *Node Resets*.
+* **Rewiring needed** if you already built a node: move the MT3608 input from `Vext` to the MOSFET output and wire `GPIO7`.
+
 ## Not implemented (ideas)
-* Separate MOSFET for the boost converter so EC/temperature are read without the 18 V loop on.
+* Reading EC and temperature while the 18 V loop is off (the MOSFET switch exists now, the firmware does not yet use it that way).
 * Double transmission / acknowledgements, rolling codes, node maintenance mode with Wi-Fi OTA.
 * `createdAt` timestamps on openSenseMap uploads and retry queue.
 * Confirm the dashboard entity IDs and the openSenseMap authentication against your own box (the openSenseMap API has been changing).

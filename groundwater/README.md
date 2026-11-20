@@ -12,10 +12,11 @@ Built around the **Heltec WiFi LoRa 32 V3 (ESP32-S3 + SX1262)**, battery-powered
 * **Water Table Depth (0-4 m):** industrial submersible hydrostatic pressure transmitter (TL-136, 0-5 m, 4-20 mA, vented cable).
 * **Water Quality & Recharge:** waterproof DS18B20 temperature probe and an analog EC/TDS sensor with automatic 25 °C temperature compensation.
 * **Enclosure/weather context (BME280, optional):** air pressure, plus temperature and humidity inside the box, which tells you when the desiccant is used up.
-* **Long battery life:** the Heltec `Vext` rail (`GPIO36`) cuts power to all sensors between readings. Expect roughly **1-2 years** from one 3000 mAh+ 18650, depending on your board's real sleep current. **Measure it** (see Field Guide, section 6); the estimate is not a guarantee.
+* **Long battery life:** the Heltec `Vext` rail (`GPIO36`) and a MOSFET switch for the boost converter (`GPIO7`) cut power to all sensors between readings. Expect roughly **1-2 years** from one 3000 mAh+ 18650, depending on your board's real sleep current. **Measure it** (see Field Guide, section 6); the estimate is not a guarantee.
 * **Low-battery behaviour:** below 3.4 V a node only reports its battery voltage and sleeps 6 h.
 * **Dual cloud & local output:** one farmhouse gateway receives packets from several wells and pushes them to **openSenseMap** and **Home Assistant**.
-* **Gateway health:** per-well *Node Online* and *Water Below Sensor* entities, plus an editable *Sensor Depth Below Ground* (no reflashing when you re-lower a probe).
+* **Gateway health and data quality:** per-well *Node Online*, *Water Below Sensor*, *QC Flags*, *Readings Lost* and *Node Resets* entities, plus an editable *Sensor Depth Below Ground* (no reflashing when you re-lower a probe). Raw voltages stay visible as diagnostic entities.
+* **Calibration in the gateway:** the nodes send raw voltages; shunt value, zero, span and EC calibration are constants in the gateway file, so recalibrating never needs a visit to the well.
 
 ---
 
@@ -46,8 +47,8 @@ agricultural-groundwater-monitor/
 │       ├── depth-adc-esp.yaml          # Depth ADC option 1: ESP32 built-in (default)
 │       ├── depth-adc-ads1115.yaml      # Depth ADC option 2: external ADS1115
 │       ├── water-well-node-example-ads1115.yaml  # Example node using the ADS1115
-│       ├── water-well-node-1.yaml      # Node 1 settings & calibration
-│       └── water-well-node-2.yaml      # Node 2 settings & calibration
+│       ├── water-well-node-1.yaml      # Node 1 settings
+│       └── water-well-node-2.yaml      # Node 2 settings
 └── home-assistant/
     ├── dashboard-card.yaml             # Lovelace cards for Well 1 and Well 2
     └── README.md
@@ -72,7 +73,7 @@ More detail: [depth channel (ESP32 ADC)](docs/img/depth-frontend-esp.svg), [dept
 
 | Component | Pin / Wire | Heltec V3 Pin | Notes |
 | :--- | :--- | :--- | :--- |
-| **MT3608 Boost Input** | `VIN+` / `VIN-` | `Vext` / `GND` | Switched on by `GPIO36` (`LOW` = ON). Tune output to **18.0 V**. Add a 220-470 µF low-ESR capacitor across its input. |
+| **MT3608 Boost Input** | `VIN+` / `VIN-` | `BAT+` through the MOSFET switch / `GND` | Switched by `GPIO7` (HIGH = ON) through an AO3401 + 2N7002 stage (`docs/wiring.md`, section 2). Tune output to **18.0 V**. Add a 220-470 µF low-ESR capacitor across its input. |
 | **TL-136 Depth Probe** | Red (`V+`) / Blue (`Out`) | MT3608 `VOUT+` / shunt node | **100 Ω 0.1 % shunt** from `Out` to `GND`; the shunt node goes through **1 kΩ** to `GPIO5` (see `docs/wiring.md`). |
 | **EC / TDS Module** | `VCC` / `GND` / `AOUT` | `Vext` / `GND` / `GPIO6` | The *probe* has two electrode wires; only the module has three pins. |
 | **BME280 (optional)** | `VIN` / `GND` / `SDA` / `SCL` | `Vext` / `GND` / `GPIO41` / `GPIO42` | 3.3 V module, I²C address `0x76` (or `0x77`; set `bme280_address`). Mount it inside the enclosure. |
@@ -100,7 +101,7 @@ More detail: [depth channel (ESP32 ADC)](docs/img/depth-frontend-esp.svg), [dept
 
 ### 4. Calibrate & Deploy in the Well
 Follow the **[Field Deployment & Calibration Guide](docs/field-deployment-guide.md)** to:
-* Zero and span-check the depth channel and compare it with a manual dip meter.
+* Zero and span-check the depth channel and compare it with a manual dip meter. The calibration constants live in the **gateway** file, so a recalibration never needs a visit to the well.
 * Perform a **two-point** EC calibration (for example 84 and 1413 µS/cm).
 * Bundle the probes, hang them from a dedicated line, and measure the exact installation depth.
 * Fit the TL-136 vent tube to a **breathable enclosure vent** with silica gel desiccant.
@@ -118,7 +119,7 @@ One gateway can listen to several wells within LoRa range (typically 1-5 km acro
 
 1. Duplicate `esphome/nodes/water-well-node-1.yaml` with a new `node_name`.
 2. In `esphome/secrets.yaml` add the `well_N_*` entries.
-3. In `esphome/gateway/water-well-gateway.yaml` add a `wN_*` substitution block, a provider under `packet_transport:` and a package entry under `packages:` (copy the Well 2 lines).
+3. In `esphome/gateway/water-well-gateway.yaml` add a `wN_*` substitution block (including the calibration values), a provider under `packet_transport:` and a package entry under `packages:` (copy the Well 2 lines).
 
 Each node adds a random 0-30 s to its sleep time, so nodes do not stay locked on the same transmit moment.
 
