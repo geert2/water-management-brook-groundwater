@@ -263,7 +263,7 @@ script:
       - deep_sleep.enter:
           id: deep_sleep_control
           # random 0-30 s jitter keeps several nodes from colliding over time
-          sleep_duration: !lambda 'return (uint32_t) ${sleep_minutes} * 60000UL + (esp_random() % 30000UL);'
+          sleep_duration: !lambda 'return (uint32_t) ${sleep_minutes} * 60000UL + (random_uint32() % 30000UL);'
 
 deep_sleep:
   id: deep_sleep_control

@@ -150,7 +150,7 @@ script:
           request_headers:   # not `headers` [R6]
             Content-Type: application/json
             # openSenseMap expects the box access token as-is (no "Bearer " prefix) [R26][R28]
-            Authorization: !lambda 'return token;'
+            Authorization: !lambda 'return token.c_str();'   # header lambdas must return const char*
           body: !lambda |-
             // Only valid values are sent: a NaN would make the whole JSON invalid.
             std::string p = "[";

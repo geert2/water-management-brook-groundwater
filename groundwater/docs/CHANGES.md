@@ -60,6 +60,12 @@ Validated with ESPHome 2026.10.2 (`esphome config`, zero warnings) for both node
 * **Correction:** TL-136 supply is listed as 12 to 32 V, not 9 to 12 V. EC sensor accuracy is ±10 % of full scale. The input capacitor on the boost converter is a precaution (the MT3608 has soft start).
 * `[R#]` tags added in the YAML comments, README, BOM, wiring notes and field guide.
 
+## Compile fixes (21 November 2026)
+The configs had only been checked with `esphome config`. The first real `esphome compile` found two C++ errors:
+* Node: `esp_random()` is not declared in ESPHome lambdas; the sleep jitter now uses `random_uint32()`.
+* Gateway: request header lambdas must return `const char*`; the `Authorization` header now returns `token.c_str()`.
+* Added the `.gitignore` and the GitHub Actions workflow that the README already referred to. The workflow validates all configs and also compiles node 1, the ADS1115 example node and the gateway.
+
 ## Not implemented (ideas)
 * Separate MOSFET for the boost converter so EC/temperature are read without the 18 V loop on.
 * Double transmission / acknowledgements, rolling codes, node maintenance mode with Wi-Fi OTA.
