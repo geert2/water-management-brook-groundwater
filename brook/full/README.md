@@ -84,6 +84,7 @@ home-assistant/
   ui-lovelace.yaml         dashboard (no other Home Assistant YAML needed)
 docs/
   wiring.md  calibration.md  bench-test.md  sensor_choices.md (why each sensor)
+  review-notes-groundwater-set.md (review against the groundwater design, with status)
 ```
 
 ## Quick start
