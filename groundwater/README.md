@@ -4,7 +4,7 @@ An open-source, low-cost citizen science hardware and software stack for monitor
 
 Built around the **Heltec WiFi LoRa 32 V3 (ESP32-S3 + SX1262)**, battery-powered field nodes transmit hourly readings over raw LoRa (868 MHz) to a central gateway that feeds both **Home Assistant** and the public **openSenseMap** citizen science map.
 
-> **Status:** the ESPHome configs pass `esphome config` validation (ESPHome 2026.10) and the CI workflow re-checks this on every push. They have **not yet been tested on hardware**. Please bench-test one node (see the Field Deployment Guide) and report what you find. See [`docs/CHANGES.md`](docs/CHANGES.md) for what changed after the technical review.
+> **Status:** the ESPHome configs pass `esphome config` validation (ESPHome 2026.10) and the CI workflow in the repository root re-checks this, and compiles the firmware, on every push. They have **not yet been tested on hardware**. Please bench-test one node (see the Field Deployment Guide) and report what you find. See [`docs/CHANGES.md`](docs/CHANGES.md) for what changed after the technical review.
 
 ---
 
@@ -23,13 +23,11 @@ Built around the **Heltec WiFi LoRa 32 V3 (ESP32-S3 + SX1262)**, battery-powered
 ## Repository Structure
 
 ```text
-agricultural-groundwater-monitor/
+groundwater/
 ├── README.md                           # Project overview & quickstart
 ├── BOM.md                              # Shopping list (~€90-110/node)
 ├── LICENSE                             # MIT License
 ├── .gitignore                          # Excludes local secrets.yaml and build caches
-├── .github/workflows/
-│   └── esphome-validate.yml            # CI: validates all ESPHome configs
 ├── docs/
 │   ├── field-deployment-guide.md       # Waterproofing, calibration, install, troubleshooting
 │   ├── wiring.md                       # Depth-channel schematic, protection, pinout

@@ -1,0 +1,72 @@
+name: ESPHome
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# Each project keeps its own secrets.yaml.example; CI fills in a random API key.
+jobs:
+  config:
+    name: config ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: groundwater
+            files: nodes/water-well-node-1.yaml nodes/water-well-node-2.yaml nodes/water-well-node-example-ads1115.yaml gateway/water-well-gateway.yaml
+          - project: brook/lite
+            files: nodes/brook-lite-node-1.yaml gateway/brook-lite-gateway.yaml
+          - project: brook/full
+            files: brook_sensor_node.yaml brook_gateway.yaml brook_air_quality.yaml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install esphome
+      - name: Dummy secrets
+        run: .github/scripts/dummy-secrets.sh "${{ matrix.project }}/esphome"
+      - name: Validate
+        working-directory: ${{ matrix.project }}/esphome
+        run: |
+          for f in ${{ matrix.files }}; do
+            echo "::group::$f"
+            esphome config "$f" > /dev/null
+            echo "::endgroup::"
+          done
+
+  compile:
+    name: compile ${{ matrix.file }}
+    needs: config
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        file:
+          - groundwater/esphome/nodes/water-well-node-1.yaml
+          - groundwater/esphome/gateway/water-well-gateway.yaml
+          - brook/lite/esphome/nodes/brook-lite-node-1.yaml
+          - brook/lite/esphome/gateway/brook-lite-gateway.yaml
+          - brook/full/esphome/brook_sensor_node.yaml
+          - brook/full/esphome/brook_gateway.yaml
+          - brook/full/esphome/brook_air_quality.yaml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.esphome
+          key: esphome-${{ runner.os }}-${{ hashFiles('**/esphome/**/*.yaml') }}
+          restore-keys: esphome-${{ runner.os }}-
+      - run: pip install esphome
+      - name: Dummy secrets
+        run: |
+          d="${{ matrix.file }}"; d="${d%%/esphome/*}/esphome"
+          .github/scripts/dummy-secrets.sh "$d"
+      - run: esphome compile ${{ matrix.file }}

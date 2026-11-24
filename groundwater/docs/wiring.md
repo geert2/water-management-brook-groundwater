@@ -64,7 +64,7 @@ It works if your water column stays below about 4.8 m (the ESP32-S3 ADC saturate
 * The 220-470 µF capacitor at the boost input is a precaution against the start-up current spike browning out the ESP32. The MT3608 has internal soft start [R20], so this is a cheap safeguard rather than a fix for a known fault.
 * The TL-136 is listed with a 12 to 32 V supply [R21]; at 18 V a 160 Ω shunt (3.2 V at 20 mA) still leaves about 14.8 V. Check the label of your unit.
 * Set the MT3608 to 18.0 V **before** connecting the TL-136, and re-check after transport (the trimmer drifts).
-* `Vext` and the boost switch are both turned on very early at boot (before the sensors are set up), because the BME280, ADS1115 and DS18B20 are detected once during start-up and must already have power.
+* `Vext` is turned on very early at boot (before the sensors are set up), because the BME280, ADS1115 and DS18B20 are detected once during start-up and must already have power. The boost switch (`GPIO7`) stays off until the battery has been read, so the battery voltage is measured without the 18 V loop load; then the TL-136 gets `warmup` (default 1000 ms) to settle.
 * Active energy is dominated by the boost converter. Keep the `warmup` time as short as the transmitter allows (measure how fast the reading settles; the default is 1000 ms, the Meetbeek set waits 3 s).
 
 ## 3. Pin summary

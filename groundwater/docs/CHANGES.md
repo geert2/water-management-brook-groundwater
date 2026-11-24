@@ -61,7 +61,7 @@ Validated with ESPHome 2026.10.2 (`esphome config`, zero warnings) for both node
 * `[R#]` tags added in the YAML comments, README, BOM, wiring notes and field guide.
 
 ## Ideas taken from the Meetbeek set (20 November 2026)
-Compared with the Grote Beek set (`meetbeek`), four things were adopted. All four configs still pass `esphome config` with zero warnings; the C++ is not compiled and nothing was tested on hardware.
+Compared with the Grote Beek set (`meetbeek`), four things were adopted. All four configs still pass `esphome config` with zero warnings; nothing was tested on hardware.
 * **Calibration in the gateway.** The node now sends the raw shunt voltage (`vd`) and raw EC voltage (`ve`); `water-well-gateway.yaml` holds `wN_shunt_ohm`, `wN_zero_offset_m`, `wN_span_scale`, `wN_ec_gain`, `wN_ec_offset`. Recalibrating is a gateway re-flash over Wi-Fi, not a USB visit. The node substitutions `shunt_ohm`, `zero_offset_m`, `span_scale`, `ec_gain`, `ec_offset` no longer exist.
 * **Packet counter, loss and reset counters.** The node sends a counter (`n`, kept in RTC memory through deep sleep). The gateway counts gaps (*Readings Lost*) and counter restarts (*Node Resets*). The counter also starts the gateway's calculation and the openSenseMap upload.
 * **QC flags.** New *QC Flags* sensor per well (bits: 1 loop out of range, 2 EC invalid, 4 temperature invalid, 8 battery low, 16 EC uncalibrated, 32 depth uncalibrated) and a `ec_max_us` limit (2000 µS/cm) above which EC is not published or uploaded. Home Assistant card and README updated.
@@ -69,6 +69,16 @@ Compared with the Grote Beek set (`meetbeek`), four things were adopted. All fou
 * Not adopted: the second (duplicate) transmission, the ultrasonic cross-check and the turbidity sensor (not relevant for a well), and the 869.525 MHz sub-band (the 868.1 MHz settings stay; see the Meetbeek review notes).
 * Entities that changed: *Water Column Height* and *Electrical Conductivity* are now calculated in the gateway (same names, so Home Assistant history continues). New diagnostic entities: *Depth Shunt Voltage*, *EC Raw Voltage*, *Packet Counter*, *Level Loop Current*, *QC Flags*, *Readings Lost*, *Node Resets*.
 * **Rewiring needed** if you already built a node: move the MT3608 input from `Vext` to the MOSFET output and wire `GPIO7`.
+
+## Compile fixes (21 November 2026)
+The configs had only been checked with `esphome config`. The first real `esphome compile` found two C++ errors:
+* Node: `esp_random()` is not declared in ESPHome lambdas; the sleep jitter now uses `random_uint32()`.
+* Gateway: request header lambdas must return `const char*`; the `Authorization` header now returns `token.c_str()`.
+* Added the `.gitignore` and the GitHub Actions workflow that the README already referred to. The workflow validates all configs and also compiles node 1, the ADS1115 example node and the gateway.
+
+## Gateway calibration branch brought up to date (24 November 2026)
+* The calibration / packet counter / QC flags / boost switch changes above (20 November) were merged with the compile fixes and the move into `water-management-brook-groundwater`, and are now compiled by the root CI.
+* **Boost switch timing:** the MT3608 is no longer switched on at boot. It is switched on after the battery reading, so the battery voltage (and the low-battery decision) is measured without the 18 V loop load; the TL-136 then gets `warmup` to settle.
 
 ## Not implemented (ideas)
 * Reading EC and temperature while the 18 V loop is off (the MOSFET switch exists now, the firmware does not yet use it that way).

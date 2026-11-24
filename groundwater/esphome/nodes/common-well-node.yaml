@@ -11,7 +11,7 @@ substitutions:
   sleep_minutes: "60"            # time between readings (a 0-30 s random jitter is added)
   low_battery_v: "3.4"           # below this, skip measuring and sleep longer (ignored if the reading is < 2 V, see script)
   low_battery_sleep_minutes: "360"
-  warmup: 1000ms                 # extra settling time after boot (Vext and the boost converter are already on since early boot).
+  warmup: 1000ms                 # settling time after the boost converter (GPIO7) is switched on, after the battery reading.
                                  # The TL-136 loop needs to settle; verify on the bench (the Meetbeek set waits 3 s).
   ds18b20_wait: 900ms            # DS18B20 12-bit conversion takes up to 750 ms [R23]
   tx_wait: 1500ms                # airtime + margin before the radio sleeps. Semtech AN1200.13 formula [R22]:
@@ -41,7 +41,6 @@ esphome:
     - priority: 750
       then:
         - output.turn_on: vext_power
-        - output.turn_on: boost_power   # MT3608 input from the battery through the MOSFET switch (GPIO7)
         - lambda: 'delay(30);'   # let the devices power up before they are probed
     # Normal measurement cycle once everything is set up.
     - priority: -100
@@ -238,7 +237,7 @@ script:
 
       # Normal cycle
       - output.turn_on: vext_power         # already on; harmless
-      - output.turn_on: boost_power        # already on; harmless
+      - output.turn_on: boost_power        # MT3608 on only now, so the battery was read without the 18 V loop load
       - delay: ${warmup}
       - component.update: bme280_hub
       - component.update: groundwater_temp_c
@@ -254,7 +253,7 @@ script:
       - deep_sleep.enter:
           id: deep_sleep_control
           # random 0-30 s jitter keeps several nodes from colliding over time
-          sleep_duration: !lambda 'return (uint32_t) ${sleep_minutes} * 60000UL + (esp_random() % 30000UL);'
+          sleep_duration: !lambda 'return (uint32_t) ${sleep_minutes} * 60000UL + (random_uint32() % 30000UL);'
 
 deep_sleep:
   id: deep_sleep_control
