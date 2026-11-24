@@ -3,15 +3,16 @@
 *.elf
 *.hex
 *.uf2
+.esphome/
 build/
 
 # Secrets
 secrets.yaml
-!secrets.yaml.example
+*.secret
 
 # IDE
-.idea/
 .vscode/
+.idea/
 *.swp
 *.swo
 *~

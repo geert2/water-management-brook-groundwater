@@ -1,0 +1,155 @@
+# Paste into a Home Assistant dashboard using "Manual card" (YAML editor).
+#
+# ENTITY IDs: Home Assistant builds them from the device name plus the entity name,
+# e.g. sensor.groundwater_gateway_well_1_water_table_depth_below_ground.
+# Check the real IDs under Settings > Devices & services > ESPHome > Groundwater Gateway
+# and, if they differ, use find-and-replace on the prefix.
+#
+# The file shows Well 1 and Well 2. For more wells, copy one block and replace the well.
+# Depth below ground is calculated on the gateway; there is no separate HA template sensor.
+
+type: vertical-stack
+cards:
+  # ---------------------------------------------------------------- Well 1
+  - type: markdown
+    content: |
+      ## North Field Piezometer (Well 1)
+      Groundwater level, temperature and salinity. The depth gauge shows metres below ground.
+
+  - type: horizontal-stack
+    cards:
+      - type: gauge
+        entity: sensor.groundwater_gateway_well_1_water_table_depth_below_ground
+        name: Water Table Depth
+        unit: m
+        min: 0
+        max: 4.5
+        needle: true
+        severity:
+          green: 0       # shallow groundwater (0 - 2.5 m)
+          yellow: 2.5    # seasonal drawdown (2.5 - 3.5 m)
+          red: 3.5       # critical dry-season depletion (> 3.5 m) - adjust to your field
+
+      - type: gauge
+        entity: sensor.groundwater_gateway_well_1_electrical_conductivity
+        name: Conductivity (EC25)
+        unit: µS/cm
+        min: 0
+        max: 2000        # the analog EC sensor is only reliable up to about 2000 µS/cm
+        needle: true
+        severity:
+          green: 0
+          yellow: 800
+          red: 1500
+
+  - type: entities
+    title: Well 1 - probe telemetry and node health
+    show_header_toggle: false
+    entities:
+      - entity: binary_sensor.groundwater_gateway_well_1_node_online
+        name: Node online
+      - entity: binary_sensor.groundwater_gateway_well_1_water_below_sensor
+        name: Water below sensor
+      - entity: sensor.groundwater_gateway_well_1_groundwater_temperature
+        name: Groundwater temperature
+        icon: mdi:thermometer-water
+      - entity: sensor.groundwater_gateway_well_1_water_column_height
+        name: Water column above sensor
+        icon: mdi:waves-arrow-up
+      - entity: sensor.groundwater_gateway_well_1_air_pressure
+        name: Air pressure
+        icon: mdi:gauge
+      - entity: sensor.groundwater_gateway_well_1_enclosure_humidity
+        name: Enclosure humidity (desiccant check)
+        icon: mdi:water-percent
+      - entity: sensor.groundwater_gateway_well_1_enclosure_temperature
+        name: Enclosure temperature
+      - entity: sensor.groundwater_gateway_well_1_battery_voltage
+        name: Node battery (Li-ion)
+        icon: mdi:battery-high
+      - entity: sensor.groundwater_gateway_well_1_water_table_depth_below_ground
+        name: Last LoRa packet
+        secondary_info: last-updated
+      - entity: number.groundwater_gateway_well_1_sensor_depth_below_ground
+        name: Sensor depth below ground (editable)
+
+  - type: history-graph
+    title: Well 1 - 7-day trend
+    hours_to_show: 168
+    entities:
+      - entity: sensor.groundwater_gateway_well_1_water_table_depth_below_ground
+        name: Depth below ground (m)
+      - entity: sensor.groundwater_gateway_well_1_electrical_conductivity
+        name: EC25 (µS/cm)
+
+  # ---------------------------------------------------------------- Well 2
+  - type: markdown
+    content: |
+      ## South Field Piezometer (Well 2)
+      Groundwater level, temperature and salinity. The depth gauge shows metres below ground.
+
+  - type: horizontal-stack
+    cards:
+      - type: gauge
+        entity: sensor.groundwater_gateway_well_2_water_table_depth_below_ground
+        name: Water Table Depth
+        unit: m
+        min: 0
+        max: 4.5
+        needle: true
+        severity:
+          green: 0       # shallow groundwater (0 - 2.5 m)
+          yellow: 2.5    # seasonal drawdown (2.5 - 3.5 m)
+          red: 3.5       # critical dry-season depletion (> 3.5 m) - adjust to your field
+
+      - type: gauge
+        entity: sensor.groundwater_gateway_well_2_electrical_conductivity
+        name: Conductivity (EC25)
+        unit: µS/cm
+        min: 0
+        max: 2000        # the analog EC sensor is only reliable up to about 2000 µS/cm
+        needle: true
+        severity:
+          green: 0
+          yellow: 800
+          red: 1500
+
+  - type: entities
+    title: Well 2 - probe telemetry and node health
+    show_header_toggle: false
+    entities:
+      - entity: binary_sensor.groundwater_gateway_well_2_node_online
+        name: Node online
+      - entity: binary_sensor.groundwater_gateway_well_2_water_below_sensor
+        name: Water below sensor
+      - entity: sensor.groundwater_gateway_well_2_groundwater_temperature
+        name: Groundwater temperature
+        icon: mdi:thermometer-water
+      - entity: sensor.groundwater_gateway_well_2_water_column_height
+        name: Water column above sensor
+        icon: mdi:waves-arrow-up
+      - entity: sensor.groundwater_gateway_well_2_air_pressure
+        name: Air pressure
+        icon: mdi:gauge
+      - entity: sensor.groundwater_gateway_well_2_enclosure_humidity
+        name: Enclosure humidity (desiccant check)
+        icon: mdi:water-percent
+      - entity: sensor.groundwater_gateway_well_2_enclosure_temperature
+        name: Enclosure temperature
+      - entity: sensor.groundwater_gateway_well_2_battery_voltage
+        name: Node battery (Li-ion)
+        icon: mdi:battery-high
+      - entity: sensor.groundwater_gateway_well_2_water_table_depth_below_ground
+        name: Last LoRa packet
+        secondary_info: last-updated
+      - entity: number.groundwater_gateway_well_2_sensor_depth_below_ground
+        name: Sensor depth below ground (editable)
+
+  - type: history-graph
+    title: Well 2 - 7-day trend
+    hours_to_show: 168
+    entities:
+      - entity: sensor.groundwater_gateway_well_2_water_table_depth_below_ground
+        name: Depth below ground (m)
+      - entity: sensor.groundwater_gateway_well_2_electrical_conductivity
+        name: EC25 (µS/cm)
