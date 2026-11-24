@@ -32,15 +32,16 @@ Because these splices sit underwater, follow the **Marine Triple-Seal Method**:
 ## 2. Pre-Deployment Bench Checklist
 Complete these steps indoors before heading out to the field well.
 
-- [ ] **Boost converter:** with a multimeter, verify the MT3608 output reads **18.0 V DC** while `Vext` is active (the node's LED flashes at wake-up; the rail is on for about 2 s per cycle, so use a long `warmup` temporarily or a bench supply).
-- [ ] **Shunt and protection:** confirm the **100 Ω shunt**, the **1 kΩ series resistor**, the **3.6 V zener** and the **100 nF capacitor** are wired as in `docs/wiring.md`. Measure the actual shunt value and set `shunt_ohm` if needed.
-- [ ] **Boost input capacitor:** 220-470 µF fitted across the MT3608 input.
+- [ ] **Boost converter:** with a multimeter, verify the MT3608 output reads **18.0 V DC** while the boost switch (`GPIO7`) is on (the rail is on for about 2-3 s per cycle, so use a long `warmup` temporarily or a bench supply). Also check that it reads **0 V** while the node sleeps: the 100 kΩ pull-down must keep the MOSFET switch off.
+- [ ] **Shunt and protection:** confirm the **100 Ω shunt**, the **1 kΩ series resistor**, the **3.6 V zener** and the **100 nF capacitor** are wired as in `docs/wiring.md`. Measure the actual shunt value and set `wN_shunt_ohm` in the gateway file if needed.
+- [ ] **Boost input capacitor:** 220-470 µF fitted across the MT3608 input (after the MOSFET switch).
+- [ ] **Boost MOSFET switch:** AO3401 (P-MOSFET) + 2N7002 (N-MOSFET) wired as in `docs/wiring.md` section 2; no 18 V without `GPIO7` HIGH.
 - [ ] **LoRa antenna attached:** **never power the Heltec V3 without the 868 MHz antenna screwed on**, or you risk damaging the SX1262 amplifier.
 - [ ] **LED flash:** at power-on the node's LED flashes once per reading cycle.
 - [ ] **First packet:** the gateway log (or Home Assistant) shows readings for the node within a couple of minutes. If nothing arrives, check that both devices use the same `lora_encryption_key`.
 - [ ] **Battery reading:** compare *Battery Voltage* with a multimeter; adjust `vbat_scale` if it is off by more than about 2 %.
 - [ ] **BME280 (if fitted):** *Air Pressure* about 950-1050 hPa, *Enclosure Humidity* and *Enclosure Temperature* plausible.
-- [ ] **Dry depth test:** with the TL-136 hanging in air, *Water Column Height* should read **0.00 m (±0.02 m)**. If it is offset, set `zero_offset_m` in the node file to the negative of the reading (see section 3.1).
+- [ ] **Dry depth test:** with the TL-136 hanging in air, *Water Column Height* should read **0.00 m (±0.02 m)**. If it is offset, set `wN_zero_offset_m` in the gateway file to the negative of the reading (see section 3.1).
 - [ ] **Silica gel + breather vent:** fit the membrane vent plug on the enclosure and a fresh 10-20 g silica gel pack inside.
 
 ---
@@ -48,16 +49,16 @@ Complete these steps indoors before heading out to the field well.
 ## 3. Calibration
 
 ### 3.1 Depth channel: zero and span
-Edit the values in `esphome/nodes/water-well-node-N.yaml` and re-flash.
+The node sends raw voltages; the calibration constants live in the **gateway** file `esphome/gateway/water-well-gateway.yaml` (`wN_zero_offset_m`, `wN_span_scale`, `wN_shunt_ohm`, `wN_ec_gain`, `wN_ec_offset`). Edit them and re-flash the gateway over Wi-Fi: the node in the field is never touched. Set `wN_depth_calibrated` / `wN_ec_calibrated` to `"1"` when the values are really yours (this clears QC flags 32 and 16).
 
-1. **Zero (in air):** read *Water Column Height* with the probe dry. Set `zero_offset_m` to the negative of that reading (reading 0.014 m → `zero_offset_m: "-0.014"`).
+1. **Zero (in air):** read *Water Column Height* with the probe dry. Set `wN_zero_offset_m` to the negative of that reading (reading 0.014 m → `w1_zero_offset_m: "-0.014"`).
 2. **Span (in water, optional but recommended):** hang the probe in a tall container (a pipe or a deep bucket) at two known water heights above the sensor, e.g. 0.50 m and 1.50 m measured with a ruler. Note the two readings (with the new zero). Then `span_scale = (1.50 - 0.50) / (reading2 - reading1)`. Typical values are within 0.99-1.01.
 *(With the optional ADS1115 the procedure is identical; only the wiring and the `depth-adc-ads1115.yaml` include differ, see `docs/wiring.md`.)*
 
 3. **Field check:** after installation, compare *Water Table Depth Below Ground* with a manual dip-meter reading. Repeat at least once per season. A persistent difference means a wrong *Sensor Depth Below Ground* (Home Assistant number entity) or an offset.
 
 ### 3.2 EC sensor: two-point calibration
-Cheap analog EC/TDS probes vary from batch to batch, and the longer cable changes the response. Calibrate each probe *after* extending its cable. Set `ec_gain: "1.0"` and `ec_offset: "0.0"` first so you read the raw value.
+Cheap analog EC/TDS probes vary from batch to batch, and the longer cable changes the response. Calibrate each probe *after* extending its cable. Set `wN_ec_gain: "1.0"` and `wN_ec_offset: "0.0"` first so you read the uncalibrated value.
 
 1. **Rinse & dry:** rinse the probe tips with distilled water and blot dry.
 2. **Low standard:** place the **EC probe and the DS18B20** in **84 µS/cm** solution; swirl to remove air bubbles; wait 60 s. Trigger a reading (press **RST** once) and note the reported *Electrical Conductivity* as `M1`.
@@ -65,7 +66,7 @@ Cheap analog EC/TDS probes vary from batch to batch, and the longer cable change
 4. **Calculate:**
    `ec_gain = (1413 - 84) / (M2 - M1)`
    `ec_offset = 84 - ec_gain × M1`
-5. Put both numbers in the node file, re-flash, and verify that both standards now read correctly.
+5. Put both numbers in the gateway file (`wN_ec_gain`, `wN_ec_offset`), re-flash the gateway, and verify that both standards now read correctly. The raw voltage stays visible as *EC Raw Voltage*, so earlier history can be recalculated.
 
 *Single-point fallback (only 1413 µS/cm available):* `ec_gain = 1413 / M`, `ec_offset = 0`. This is less accurate, especially at low conductivity.
 
@@ -105,7 +106,7 @@ Note: the DFRobot analog sensor is specified for 0-1000 ppm TDS (about 0-2000 µ
 
 | Symptom | Likely Cause | Field Fix |
 | :--- | :--- | :--- |
-| **Depth reads `unavailable`** | Shunt current outside 3.5-22 mA (0.35-2.2 V across 100 Ω). | Check battery charge, MT3608 output (18 V), and the red/blue wires and the shunt/zener network. |
+| **Depth reads `unavailable`** | Shunt current outside 3.5-22 mA (0.35-2.2 V across 100 Ω). | Check battery charge, MT3608 output (18 V while `GPIO7` is on), the MOSFET switch, and the red/blue wires and the shunt/zener network. QC flag 1 is set. |
 | **Depth looks wrong by a constant amount** | Wrong zero or sensor depth. | Redo 3.1 and the dip-meter check; correct *Sensor Depth Below Ground*. |
 | **Depth equals the sensor depth exactly and *Water Below Sensor* is on** | The water level is at or below the probe. | Genuine dry well, or the probe was installed too high. Lower the probe if possible. |
 | **Depth drifts slowly with weather** | Vent tube blocked or wet; sealed enclosure. | Open the box, check the tube, fit/clean the breather vent, replace saturated silica gel. |
@@ -114,6 +115,8 @@ Note: the DFRobot analog sensor is specified for 0-1000 ppm TDS (about 0-2000 µ
 | **Temperature `unavailable`** | DS18B20 disconnected, water in the splice, or missing 4.7 kΩ pull-up. The EC calculation then falls back to 12 °C. | Check `GPIO4` wiring, the splice and the pull-up. |
 | **BME280 values `unavailable`** | Not fitted, wrong address, loose I²C wire, or a BMP280 (no humidity). | Check `GPIO41/42`, try `bme280_address: "0x77"`, check the chip. |
 | **Enclosure humidity above ~60 %** | Saturated silica gel or a leaking gland/lid. | Replace the desiccant, check seals and the vent plug. |
+| **Readings Lost keeps rising** | Packets are missed: weak link, gateway offline, or a node that is out of range at times. | Check the *LoRa* link (antenna, height), move the gateway, check `Node Resets` (power losses). |
+| **Node Resets rises** | The node lost power (flat battery, loose contact, brown-out at the boost start). | Check the battery connector and the boost input capacitor; log the battery voltage. |
 | **No data from a node** | Out of range, loose antenna, key mismatch, or flat battery. | Check the antenna, move the gateway closer to a window, verify `lora_encryption_key` is identical everywhere, check the battery. |
 | **Gateway shows *Node Online = off*** | No packet for 2.5 h. | Same as above; also look for a battery below 3.4 V (the node then sends only its voltage every 6 h). |
 | **Battery reads 0 V or nonsense** | `GPIO37` polarity (depends on the board revision: V3/V3.1 LOW, V3.2 HIGH) or wrong divider factor. | Set `vbat_ctrl_active_low` for your revision (see `docs/wiring.md`, "Board revision check"); adjust `vbat_scale` against a multimeter. |

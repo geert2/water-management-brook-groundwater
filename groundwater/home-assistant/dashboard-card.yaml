@@ -67,6 +67,15 @@ cards:
       - entity: sensor.groundwater_gateway_well_1_battery_voltage
         name: Node battery (Li-ion)
         icon: mdi:battery-high
+      - entity: sensor.groundwater_gateway_well_1_qc_flags
+        name: Data quality flags (0 = fine)
+        icon: mdi:flag-checkered
+      - entity: sensor.groundwater_gateway_well_1_readings_lost
+        name: Readings lost (gaps in packet counter)
+        icon: mdi:radio-tower
+      - entity: sensor.groundwater_gateway_well_1_node_resets
+        name: Node power losses
+        icon: mdi:restart-alert
       - entity: sensor.groundwater_gateway_well_1_water_table_depth_below_ground
         name: Last LoRa packet
         secondary_info: last-updated
@@ -139,6 +148,15 @@ cards:
       - entity: sensor.groundwater_gateway_well_2_battery_voltage
         name: Node battery (Li-ion)
         icon: mdi:battery-high
+      - entity: sensor.groundwater_gateway_well_2_qc_flags
+        name: Data quality flags (0 = fine)
+        icon: mdi:flag-checkered
+      - entity: sensor.groundwater_gateway_well_2_readings_lost
+        name: Readings lost (gaps in packet counter)
+        icon: mdi:radio-tower
+      - entity: sensor.groundwater_gateway_well_2_node_resets
+        name: Node power losses
+        icon: mdi:restart-alert
       - entity: sensor.groundwater_gateway_well_2_water_table_depth_below_ground
         name: Last LoRa packet
         secondary_info: last-updated

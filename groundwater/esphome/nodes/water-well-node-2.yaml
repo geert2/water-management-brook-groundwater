@@ -3,11 +3,7 @@ substitutions:
   friendly_name: "Well Node 2 (South Field)"
   sleep_minutes: "60"
 
-  # Per-node calibration (see docs/field-deployment-guide.md, sections 3 and 5)
-  # zero_offset_m: "0.00"
-  # span_scale: "1.000"
-  # ec_gain: "1.000"
-  # ec_offset: "0.0"
+  # Calibration lives in the gateway (esphome/gateway/water-well-gateway.yaml), not here.
 
 packages:
   base: !include common-well-node.yaml

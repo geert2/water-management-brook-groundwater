@@ -11,3 +11,10 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+**/build/
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
