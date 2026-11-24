@@ -1,0 +1,12 @@
+substitutions:
+  node_name: water-well-node-1
+  friendly_name: "Well Node 1 (North Field)"
+  sleep_minutes: "60"
+
+  # Calibration lives in the gateway (esphome/gateway/water-well-gateway.yaml), not here.
+
+packages:
+  base: !include common-well-node.yaml
+  # Depth-channel ADC: keep ONE of the next two lines.
+  depth_adc: !include depth-adc-esp.yaml
+  # depth_adc: !include depth-adc-ads1115.yaml

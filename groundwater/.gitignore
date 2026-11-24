@@ -1,0 +1,20 @@
+# Real secrets never go to GitHub
+secrets.yaml
+**/secrets.yaml
+
+# ESPHome build output and caches
+.esphome/
+**/.esphome/
+.pioenvs/
+.piolibdeps/
+__pycache__/
+*.pyc
+.venv/
+venv/
+**/build/
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

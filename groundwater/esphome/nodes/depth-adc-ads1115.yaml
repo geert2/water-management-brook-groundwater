@@ -1,0 +1,22 @@
+# Depth channel read with an external ADS1115 16-bit ADC (I2C, powered from Vext).
+# Differential input A0-A1 across the shunt resistor, see docs/wiring.md section 1.
+# Select this file in the node YAML instead of depth-adc-esp.yaml.
+
+# ESPHome ads1115 options [R4]; inputs must stay within GND-0.3 V .. VDD+0.3 V [R18].
+substitutions:
+  ads_address: "0x48"      # ADDR pin to GND
+  ads_gain: "4.096"        # full-scale +/- volts. Use "2.048" with a 100 ohm shunt for 2x resolution.
+
+ads1115:
+  - id: ads_hub
+    address: ${ads_address}
+
+sensor:
+  - platform: ads1115
+    ads1115_id: ads_hub
+    id: depth_voltage
+    multiplexer: A0_A1
+    gain: ${ads_gain}
+    sample_rate: "16"      # samples per second; slower conversion = lower noise
+    update_interval: never
+    internal: true

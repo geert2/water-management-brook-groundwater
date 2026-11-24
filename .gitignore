@@ -1,0 +1,14 @@
+# Real secrets never go to GitHub (brook/full/esphome/secrets.yaml is a known
+# exception that only holds gateway YAML; see the open housekeeping PR)
+secrets.yaml
+**/secrets.yaml
+
+# ESPHome build output and caches
+.esphome/
+**/.esphome/
+.pioenvs/
+.piolibdeps/
+__pycache__/
+*.pyc
+.venv/
+venv/
