@@ -355,6 +355,8 @@ BAT+ ─────────────┬───────────
 
 Cycle: 5 minutes, about 15 s awake.
 
+**Low-battery mode** (built into the node firmware): below 3.4 V, measured at rest, the node does not power the boosters or sensors, sends only its battery voltage and sleeps 15 minutes. That cuts consumption to the sleep current plus a few mAh per day, so the cells recover with the next sunny days instead of running empty.
+
 | State | Current at the battery | Time per day | mAh per day |
 |-------|------------------------|--------------|-------------|
 | Deep sleep | ~0.2 mA | ~23.9 h | ~5 |
@@ -362,7 +364,7 @@ Cycle: 5 minutes, about 15 s awake.
 | Awake: sensors and boosters | ~170–200 mA (from the battery, via the Vext regulator) | 288 × 15 s | ~210 |
 | **Total** | | | **~270–300 mAh** |
 
-* 2 × 2500 mAh gives about **14 days** without any sun.
+* 2 × 2500 mAh gives about **14 days** without any sun; after that the low-battery mode takes over and the node keeps reporting its battery voltage.
 * A 10 W panel in a Flemish December delivers perhaps 3–5 Wh per day, roughly 1 Ah at
   battery voltage, so you should have about three times the margin. If your site is shaded
   or the panel is dirty, move to a 10-minute cycle (`sleep_time: 10min`).

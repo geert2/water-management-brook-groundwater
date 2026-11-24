@@ -24,7 +24,10 @@ substitutions:
   lora_tx_power_dbm: "14"
 
   # --- Node considered offline after this many milliseconds without data ------
-  offline_after_ms: "1200000"      # 20 min (4 missed 5-minute cycles)
+  offline_after_ms: "1200000"      # 20 min (4 missed 5-minute cycles; low-battery mode reports every 15 min)
+
+  # --- Battery: QC flag 32 below this (same value as low_battery_v in the node) ---
+  low_battery_v: "3.4"
 
   # --- TL-136 level (4-20 mA loop through a shunt resistor) -------------------
   tl136_shunt_ohm: "120.0"         # MEASURE your resistor with a multimeter (120 Ω nominal)
@@ -93,6 +96,8 @@ mqtt:
   password: !secret mqtt_password
   topic_prefix: brook/gateway
   discovery: false                 # Home Assistant already gets the data via the API
+  reboot_timeout: 0s               # never reboot because the broker is unreachable (default: 15 min),
+                                   # which would also reset the lost/reset counters
 
 globals:
   - id: have_rx
@@ -194,18 +199,21 @@ sx126x:
           float us_level = ${us_mount_height_m} - d + ${us_zero_offset_m};
           if (std::isnan(d) || d < 0.25f) flags |= 16;                  // no echo / blind zone
 
-          if (std::isnan(vbat) || vbat < 3.3f) flags |= 32;             // low battery
+          if (std::isnan(vbat) || vbat < ${low_battery_v}) flags |= 32; // low battery (node skips sensors)
           if (${ec_calibrated} == 0) flags |= 64;                       // EC not calibrated
           if (${ntu_calibrated} == 0) flags |= 128;                     // turbidity not calibrated
 
           // ---- publish ----------------------------------------------------------
-          id(level_m).publish_state(level);
+          // A value that failed its check is published as "unknown" (NAN), so it never
+          // appears as a real number in graphs or in the open MQTT data. The QC Flags
+          // say why, and the raw values (loop current, raw voltages) are always kept.
+          id(level_m).publish_state((flags & 1) ? NAN : level);
           id(loop_ma).publish_state(ma);
-          id(us_level_m).publish_state(us_level);
-          id(water_temp).publish_state(wt);
-          id(ec_us).publish_state(ec25);
+          id(us_level_m).publish_state((flags & 16) ? NAN : us_level);
+          id(water_temp).publish_state((flags & 8) ? NAN : wt);
+          id(ec_us).publish_state((flags & 2) ? NAN : ec25);
           id(ec_raw_v).publish_state(vec);
-          id(turbidity_ntu).publish_state(ntu);
+          id(turbidity_ntu).publish_state((flags & 4) ? NAN : ntu);
           id(turb_raw_v).publish_state(vs);
           id(battery_v).publish_state(vbat);
           id(rssi_dbm).publish_state(rssi);

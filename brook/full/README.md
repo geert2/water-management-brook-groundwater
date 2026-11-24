@@ -50,6 +50,7 @@ flowchart LR
   block of constants at home, not climbing to the stream.
 * The node sends every reading twice and the gateway counts lost readings and node resets.
 * The node sleeps almost all of the time (about 15 s awake per 5 minutes).
+* **Low-battery mode:** the node reads its battery first, before the sensors are powered. Below 3.4 V it skips the sensors, reports only the battery voltage and sleeps 15 minutes, so a dark week cannot drain the cells.
 
 ## Hardware
 
@@ -103,7 +104,7 @@ docs/
 ## Data and quality flags
 
 Home Assistant entities include the measurements, battery, LoRa RSSI/SNR, **Readings Lost**,
-**Node Resets**, **Node Online**, and a **QC Flags** number (sum of bits):
+**Node Resets**, **Node Online**, and a **QC Flags** number (sum of bits). A value that fails its check is published as *unknown*, not as a number, so it never shows up in graphs or in the MQTT open data; the raw voltages and the loop current are always published:
 
 | Bit | Meaning |
 |-----|---------|
@@ -112,7 +113,7 @@ Home Assistant entities include the measurements, battery, LoRa RSSI/SNR, **Read
 | 4 | turbidity invalid |
 | 8 | water temperature invalid |
 | 16 | no ultrasonic echo |
-| 32 | battery below 3.3 V |
+| 32 | battery below 3.4 V (the node is in low-battery mode and skipped the sensors) |
 | 64 | EC not yet calibrated |
 | 128 | turbidity not yet calibrated |
 
