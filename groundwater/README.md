@@ -32,7 +32,6 @@ groundwater/
 │   ├── field-deployment-guide.md       # Waterproofing, calibration, install, troubleshooting
 │   ├── wiring.md                       # Depth-channel schematic, protection, pinout
 │   ├── img/                            # Wiring and installation diagrams (SVG)
-│   ├── REFERENCES.md                   # Sources for every technical claim, and open items
 │   └── CHANGES.md                      # What was fixed after the technical review
 ├── esphome/
 │   ├── secrets.yaml.example            # Template for Wi-Fi, keys & openSenseMap IDs
@@ -41,9 +40,7 @@ groundwater/
 │   │   ├── water-well-gateway.yaml     # LoRa receiver + openSenseMap uploader
 │   │   └── well-package.yaml           # Everything for ONE well (reused per well)
 │   └── nodes/
-│       ├── common-well-node.yaml       # Shared node firmware
-│       ├── depth-adc-esp.yaml          # Depth ADC option 1: ESP32 built-in (default)
-│       ├── depth-adc-ads1115.yaml      # Depth ADC option 2: external ADS1115
+│       ├── common-well-node.yaml       # Node firmware shared by all wells
 │       ├── water-well-node-example-ads1115.yaml  # Example node using the ADS1115
 │       ├── water-well-node-1.yaml      # Node 1 settings
 │       └── water-well-node-2.yaml      # Node 2 settings
@@ -51,6 +48,8 @@ groundwater/
     ├── dashboard-card.yaml             # Lovelace cards for Well 1 and Well 2
     └── README.md
 ```
+
+Shared with `brook/lite/` and kept in [`../shared/`](../shared/): the Heltec V3 board, LoRa radio, gateway base and openSenseMap upload, the depth ADC options (`tl136-adc-esp.yaml`, `tl136-adc-ads1115.yaml`), the EC input, the formulas (`water_calc.h`), and the docs on the Heltec V3, cable splicing, EC calibration and references.
 
 ---
 
@@ -122,11 +121,11 @@ One gateway can listen to several wells within LoRa range (typically 1-5 km acro
 Each node adds a random 0-30 s to its sleep time, so nodes do not stay locked on the same transmit moment.
 
 ## Sources
-Settings, specifications and claims are traced to their sources in **[`docs/REFERENCES.md`](docs/REFERENCES.md)**, including a list of what could not be verified and the corrections found during the source check.
+Settings, specifications and claims are traced to their sources in **[`shared/docs/REFERENCES.md`](../shared/docs/REFERENCES.md)**, including a list of what could not be verified and the corrections found during the source check.
 
 ## Known limitations
 * Duty cycle: one frame per hour is about 0.01 % airtime, far below the 1 % limit of the 868.0-868.6 MHz sub-band [R25][R22]; check your national rules.
 * Single transmission per cycle, no acknowledgement: a lost frame is a lost reading (*Node Online* shows longer outages).
 * `packet_transport` encryption is a shared passphrase without authentication. Treat the public openSenseMap feed accordingly.
 * The EC curve is an approximation for a cheap analog probe; calibrate it and expect drift. Standing water in a piezometer is not necessarily representative of the aquifer.
-* Depth accuracy with the ESP32 ADC is roughly a few centimetres; the optional ADS1115 (`depth-adc-ads1115.yaml`, see `docs/wiring.md`) improves resolution.
+* Depth accuracy with the ESP32 ADC is roughly a few centimetres; the optional ADS1115 (`shared/esphome/sensors/tl136-adc-ads1115.yaml`, see `docs/wiring.md`) improves resolution.

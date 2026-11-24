@@ -2,6 +2,15 @@
 
 Validated with ESPHome 2026.10.2 (`esphome config`, zero warnings) for both nodes and the gateway. The C++ was **not** compiled here and nothing has been tested on hardware.
 
+
+## Shared parts moved to `shared/` (24 November 2026)
+* The board, LoRa radio, Vext / battery / LED outputs, I²C and 1-Wire buses, battery sensor and deep sleep now come from `shared/esphome/heltec-v3/node-base.yaml`; the gateway's Wi-Fi, API, OTA and radio from `shared/esphome/gateway/gateway-base.yaml`.
+* `esphome/nodes/depth-adc-esp.yaml` and `depth-adc-ads1115.yaml` moved to `shared/esphome/sensors/tl136-adc-esp.yaml` and `tl136-adc-ads1115.yaml`; the EC input to `shared/esphome/sensors/ec-sen0244-adc.yaml`. **Update the `depth_adc:` line** in any node file you made yourself.
+* The level and EC formulas are functions in `shared/esphome/include/water_calc.h` (same results).
+* The openSenseMap upload script is shared (`shared/esphome/gateway/opensensemap.yaml`) and takes lists of sensor IDs, values and decimals.
+* `docs/REFERENCES.md` moved to `shared/docs/REFERENCES.md`; the cable splicing, EC calibration and board-revision check are in `shared/docs/`, the field guide and wiring notes link to them.
+* Checked by rendering every config with `esphome config` before and after: the only differences are the shared formulas, the upload call and the header include. CI compiles node and gateway.
+
 ## Build blockers fixed
 * `sx126x`: added `hw_version` and `modulation`, renamed `output_power` to `pa_power`, `coding_rate` to `CR_4_5`, added `tcxo_voltage: 1_8V` (Heltec V3 TCXO on DIO3) and `crc_enable`.
 * Removed the unsupported ADC option `sample_duration`; use `samples` + `sampling_mode`.
@@ -54,7 +63,7 @@ Validated with ESPHome 2026.10.2 (`esphome config`, zero warnings) for both node
 * `docs/img/` holds four SVG diagrams (node wiring overview, depth front end with ESP ADC and with ADS1115, well installation) embedded in the README, `docs/wiring.md` and the field guide.
 
 ## Source check (17 November 2026)
-* All sources are listed in [`REFERENCES.md`](REFERENCES.md), with what was read, what was only seen in search results and what is still unverified.
+* All sources are listed in [`REFERENCES.md`](../../shared/docs/REFERENCES.md) (now in `shared/docs/`), with what was read, what was only seen in search results and what is still unverified.
 * **Correction:** the battery-divider enable on GPIO37 is active LOW on Heltec V3/V3.1 but **active HIGH on V3.2**. It is now the `vbat_ctrl_active_low` setting (default V3.2). Vext polarity on V3.2 could not be confirmed and is the `vext_active_low` setting.
 * The low-battery mode now ignores readings below 2 V, so a wrong divider setting cannot lock a node into 6-hour sleep.
 * **Correction:** TL-136 supply is listed as 12 to 32 V, not 9 to 12 V. EC sensor accuracy is ±10 % of full scale. The input capacitor on the boost converter is a precaution (the MT3608 has soft start).

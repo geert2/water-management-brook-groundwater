@@ -1,0 +1,39 @@
+# Common part of every indoor gateway (Heltec V3 on USB power): Wi-Fi, Home Assistant API,
+# OTA and the LoRa radio. The project file adds: esphome name, packet_transport providers,
+# its per-station packages, and the openSenseMap package (opensensemap.yaml).
+#
+# Set in the project's `substitutions:`
+#   gateway_ap_ssid  fallback hotspot name, e.g. "Groundwater Gateway"
+#   lora_frequency   same value as the nodes (see ../heltec-v3/lora.yaml)
+packages:
+  board: !include ../heltec-v3/board.yaml
+  lora: !include ../heltec-v3/lora.yaml
+
+esphome:
+  includes:
+    - ../include/water_calc.h    # tl136_column_m(), sen0244_ec25(), ...
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    # OTA is encrypted with the same key as the API
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: ${gateway_ap_ssid}
+    password: !secret ap_password
+
+captive_portal:
+
+sensor:
+  - platform: wifi_signal
+    name: "Gateway Wi-Fi Signal"
+    update_interval: 60s
+    entity_category: diagnostic

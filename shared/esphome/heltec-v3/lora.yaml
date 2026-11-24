@@ -1,0 +1,30 @@
+# Onboard SX1262 LoRa radio of the Heltec V3 (shared/docs/heltec-v3.md, [R10]).
+# Set `lora_frequency` in the project; node and gateway must use the same value.
+#   groundwater: 868100000 (868.0-868.6 MHz sub-band, 1 % duty cycle)
+#   brook/lite:  869525000 (869.4-869.65 MHz sub-band, 10 % duty cycle)
+substitutions:
+  lora_frequency: "868100000"
+
+# SPI bus for the onboard SX1262
+spi:
+  clk_pin: GPIO9
+  mosi_pin: GPIO10
+  miso_pin: GPIO11
+
+sx126x:
+  id: lora_radio
+  cs_pin: GPIO8
+  rst_pin: GPIO12
+  busy_pin: GPIO13
+  dio1_pin: GPIO14
+  hw_version: sx1262
+  modulation: LORA
+  frequency: ${lora_frequency}
+  bandwidth: 125_0kHz
+  spreading_factor: 9
+  coding_rate: CR_4_5
+  pa_power: 14
+  rf_switch: true                # DIO2 drives the RF switch on the Heltec V3
+  tcxo_voltage: 1_8V             # Heltec V3 TCXO is powered from DIO3; value as in ESPHome's device page [R10]
+  tcxo_delay: 5ms
+  crc_enable: true

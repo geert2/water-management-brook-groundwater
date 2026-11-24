@@ -1,6 +1,6 @@
 # Wiring Notes: Depth Channel, Power and Pinout
 
-*`[R#]` tags refer to [REFERENCES.md](REFERENCES.md).*
+*`[R#]` tags refer to [shared/docs/REFERENCES.md](../../shared/docs/REFERENCES.md).*
 
 > Not yet tested on hardware. Build one node on the bench and check every voltage before connecting the transmitter in a well.
 
@@ -33,8 +33,8 @@ The ESP32-S3 ADC reads up to about 3.1 V at 12 dB attenuation [R17], is less acc
    ```yaml
    packages:
      base: !include common-well-node.yaml
-     # depth_adc: !include depth-adc-esp.yaml
-     depth_adc: !include depth-adc-ads1115.yaml
+     # depth_adc: !include ../../../shared/esphome/sensors/tl136-adc-esp.yaml
+     depth_adc: !include ../../../shared/esphome/sensors/tl136-adc-ads1115.yaml
    ```
    `water-well-node-example-ads1115.yaml` shows a complete node.
 4. Range: `ads_gain: "4.096"` (default) works for 100 Ω and 160 Ω; with 100 Ω you can use `"2.048"` for twice the resolution (full-scale +/-2.048 V, the signal peaks at 2.0 V).
@@ -85,18 +85,7 @@ It works if your water column stays below about 4.8 m (the ESP32-S3 ADC saturate
 Check the battery reading against a multimeter once. If it is off, adjust `vbat_scale` in the node file (default 4.9; a 390 k / 100 k divider [R12], while ESPHome's device page uses 2.0 [R10]).
 
 ### Board revision check (do this once per board)
-The polarity of two pins differs between Heltec V3 revisions, and the firmware has two settings for it:
-
-| Setting in the node file | V3.0 / V3.1 | V3.2 | Source |
-| :-- | :-- | :-- | :-- |
-| `vbat_ctrl_active_low` (GPIO37) | `"true"` | `"false"` (default) | [R11] [R13] |
-| `vext_active_low` (GPIO36) | `"true"` (default) | **not confirmed**, check | [R10] [R11] [R14] |
-
-1. Read the revision printed on the board (V3.2 is the current one).
-2. Battery: with the battery connected and the node awake, *Battery Voltage* should match a multimeter within a few percent after adjusting `vbat_scale`. A reading near 0 V means the polarity is wrong (the firmware then ignores the reading and carries on measuring).
-3. Vext: measure between the `Ve` pin and `GND` while the node is awake (it switches `Vext` on in early boot). About 3.3 V means the setting is right. If it reads 0 V, flip `vext_active_low`. Compare with the V3.2 schematic [R14] if in doubt.
-4. A cleaner test: flash a minimal config that only toggles `GPIO36` and `GPIO37` from two buttons or switches, and watch the voltages.
-
+Two pins (`GPIO36` Vext, `GPIO37` battery divider) differ between Heltec V3 revisions. Check them once per board as described in **[shared/docs/heltec-v3.md](../../shared/docs/heltec-v3.md)**, and set `vext_active_low` / `vbat_ctrl_active_low` / `vbat_scale` in the node file.
 
 ## 4. Enclosure
 * The TL-136 vent tube must reach **atmospheric pressure**. A sealed box warms in the sun and changes its internal pressure (1 hPa is about 1 cm of water). Fit a **membrane vent plug** to the enclosure and keep the vent tube open inside it, together with a desiccant packet.

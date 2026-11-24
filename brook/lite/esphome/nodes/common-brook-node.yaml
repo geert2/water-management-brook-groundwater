@@ -9,9 +9,18 @@
 # Deep sleep: no network or OTA while asleep [R7]; DS18B20 conversion time [R8][R23].
 # Per-node values are overridden in brook-lite-node-N.yaml via `substitutions:`.
 #
-# Sources for the settings below are listed in docs/REFERENCES.md ([R#] tags in comments):
+# Sources for the settings below are listed in shared/docs/REFERENCES.md ([R#] tags in comments):
 #   sx126x / packet_transport / adc / deep_sleep / bme280 ...  -> ESPHome component docs [R1]-[R9]
 #   Heltec V3 pins, battery divider, Vext, TCXO               -> [R10]-[R14]
+#
+# The board, LoRa radio, Vext/battery/LED outputs, I2C and 1-Wire buses, battery sensor,
+# deep sleep, the level and EC inputs and the formulas are shared with groundwater/:
+# see shared/esphome/.
+
+packages:
+  node_base: !include ../../../../shared/esphome/heltec-v3/node-base.yaml
+  level_adc: !include ../../../../shared/esphome/sensors/tl136-adc-esp.yaml
+  ec_adc: !include ../../../../shared/esphome/sensors/ec-sen0244-adc.yaml
 
 substitutions:
   # --- timing ---
@@ -30,14 +39,10 @@ substitutions:
   # --- EC channel (two-point calibration, docs/field-guide.md section 3.2) ---
   ec_gain: "1.0"
   ec_offset: "0.0"
-  # --- battery divider on the Heltec V3 (390k/100k = x4.9) [R12] ---
-  vbat_scale: "4.9"              # calibrate against a multimeter; ESPHome's device page uses 2.0 [R10]
-  # ADC_Ctrl (GPIO37) polarity DEPENDS ON THE BOARD REVISION [R11][R13]:
-  #   V3.0 / V3.1: LOW connects the divider  -> "true"
-  #   V3.2 (check the silkscreen): HIGH connects it -> "false"
-  vbat_ctrl_active_low: "false"
-  # Vext (GPIO36) enable level. V3/V3.1: LOW = ON [R10]. V3.2 not confirmed [R11]; verify with a multimeter.
-  vext_active_low: "true"
+  # Battery divider and board revision (vbat_scale, vbat_ctrl_active_low, vext_active_low):
+  # defaults in shared/esphome/heltec-v3/node-base.yaml, override them in the node file.
+  # --- LoRa: 869.525 MHz (869.4-869.65 MHz sub-band, 10 % duty cycle) [R25] ---
+  lora_frequency: "869525000"
   # --- BME280 (air temperature + humidity) ---
   bme280_address: "0x76"
 
@@ -55,41 +60,6 @@ esphome:
     - priority: -100
       then:
         - script.execute: measure_and_sleep
-
-esp32:
-  variant: esp32s3
-  board: esp32-s3-devkitc-1
-  flash_size: 8MB
-  cpu_frequency: 80MHZ
-  framework:
-    type: esp-idf
-
-logger:
-  level: WARN
-
-# SPI bus for the onboard SX1262 LoRa chip
-spi:
-  clk_pin: GPIO9
-  mosi_pin: GPIO10
-  miso_pin: GPIO11
-
-sx126x:
-  id: lora_radio
-  cs_pin: GPIO8
-  rst_pin: GPIO12
-  busy_pin: GPIO13
-  dio1_pin: GPIO14
-  hw_version: sx1262
-  modulation: LORA
-  frequency: 869525000           # 869.525 MHz: 869.4-869.65 MHz sub-band, 10 % duty cycle [R25]
-  bandwidth: 125_0kHz
-  spreading_factor: 9
-  coding_rate: CR_4_5
-  pa_power: 14
-  rf_switch: true                # DIO2 drives the RF switch on the Heltec V3
-  tcxo_voltage: 1_8V             # [R10]
-  tcxo_delay: 5ms
-  crc_enable: true
 
 # The node only transmits, once per cycle, when the script calls component.update.
 packet_transport:
@@ -113,30 +83,6 @@ packet_transport:
         broadcast_id: ap
       - id: battery_voltage_v
         broadcast_id: v
-
-output:
-  - platform: gpio
-    pin: GPIO36
-    id: vext_power
-    inverted: ${vext_active_low}
-  - platform: gpio
-    pin: GPIO37
-    id: vbat_adc_enable
-    inverted: ${vbat_ctrl_active_low}
-  - platform: gpio
-    pin: GPIO35
-    id: status_led               # flashes briefly at every wake-up
-
-one_wire:
-  - platform: gpio
-    pin: GPIO4
-
-# Separate I2C bus (not the onboard OLED bus) for the BME280
-i2c:
-  sda: GPIO41
-  scl: GPIO42
-  scan: false
-  frequency: 50kHz               # slower clock tolerates the ~0.5-1 m cable to the radiation shield
 
 sensor:
   # 1. Air temperature, relative humidity and pressure (BME280 in a radiation shield, outside the box).
@@ -165,16 +111,8 @@ sensor:
     accuracy_decimals: 2
     update_interval: never
 
-  # 3. Shunt voltage of the level channel on GPIO5 (through 1 kohm + clamp, docs/wiring.md).
-  #    12 dB attenuation reads up to about 3.1 V on the ESP32-S3 [R17][R3].
-  - platform: adc
-    pin: GPIO5
-    id: depth_voltage
-    attenuation: 12db
-    samples: 16
-    sampling_mode: avg
-    update_interval: never
-    internal: true
+  # 3. Shunt voltage `depth_voltage` of the level channel on GPIO5 (through 1 kohm + clamp, docs/wiring.md):
+  #    shared/esphome/sensors/tl136-adc-esp.yaml.
 
   # 4. Water above the sensor (TL-136 0-${range_m} m, 4-20 mA across ${shunt_ohm} ohm).
   - platform: template
@@ -184,26 +122,12 @@ sensor:
     accuracy_decimals: 3
     update_interval: never
     lambda: |-
-      float v = id(depth_voltage).state;
-      if (isnan(v)) return NAN;
-      float i_ma = v / ${shunt_ohm} * 1000.0f;
-      // Outside 3.5-22 mA means a broken wire, a short or a boost fault.
-      // Above 20 mA (a flood beyond the range) the value is kept: it shows 'at least range_m'.
-      if (i_ma < 3.5f || i_ma > 22.0f) return NAN;
-      float depth = (i_ma - 4.0f) / 16.0f * ${range_m};
-      depth = depth * ${span_scale} + ${zero_offset_m};
-      return depth < -0.1f ? NAN : depth;
+      // NAN outside 3.5-22 mA (broken wire, short, boost fault). Between 20 and 22 mA (a flood beyond
+      // the range) the value is kept: it shows 'at least range_m'. See shared/esphome/include/water_calc.h
+      return tl136_column_m(tl136_loop_ma(id(depth_voltage).state, ${shunt_ohm}), ${range_m}, ${span_scale}, ${zero_offset_m});
 
-  # 5. EC module output on GPIO6. The probe sits in the brook, the module in the dry box.
-  #    The module is powered from Vext, so it only runs (and excites the probe) during a reading.
-  - platform: adc
-    pin: GPIO6
-    id: ec_voltage
-    attenuation: 12db
-    samples: 16
-    sampling_mode: avg
-    update_interval: never
-    internal: true
+  # 5. EC module output `ec_voltage` on GPIO6: shared/esphome/sensors/ec-sen0244-adc.yaml.
+  #    The probe sits in the brook, the module in the dry box.
 
   # 6. EC at 25 °C, compensated with the DS18B20 temperature (2 %/°C).
   - platform: template
@@ -213,27 +137,11 @@ sensor:
     accuracy_decimals: 0
     update_interval: never
     lambda: |-
-      float v = id(ec_voltage).state;
-      if (isnan(v)) return NAN;
-      float temp = id(water_temp_c).state;
-      if (isnan(temp)) temp = 12.0f;   // fallback if the DS18B20 failed
-      float comp_v = v / (1.0f + 0.02f * (temp - 25.0f));
-      // DFRobot cubic TDS curve [R19]; TDS = EC / 2, so the 0.5 and 2.0 factors cancel.
-      float ec = 133.42f * comp_v * comp_v * comp_v - 255.86f * comp_v * comp_v + 857.39f * comp_v;
-      ec = ec * ${ec_gain} + ${ec_offset};
+      // Temperature compensation, DFRobot curve [R19] and calibration: shared/esphome/include/water_calc.h
+      float ec = sen0244_ec25(id(ec_voltage).state, id(water_temp_c).state, ${ec_gain}, ${ec_offset});
       return ec < 0.0f ? 0.0f : ec;
 
-  # 7. Node battery voltage
-  - platform: adc
-    pin: GPIO1
-    id: battery_voltage_v
-    name: "Battery Voltage"
-    attenuation: 2.5db
-    samples: 8
-    sampling_mode: avg
-    update_interval: never
-    filters:
-      - multiply: ${vbat_scale}
+  # 7. Node battery voltage `battery_voltage_v`: shared/esphome/heltec-v3/node-base.yaml.
 
 script:
   - id: measure_and_sleep
@@ -282,6 +190,3 @@ script:
           id: deep_sleep_control
           # random 0-30 s jitter keeps several nodes from colliding over time
           sleep_duration: !lambda 'return (uint32_t) ${sleep_minutes} * 60000UL + (random_uint32() % 30000UL);'
-
-deep_sleep:
-  id: deep_sleep_control

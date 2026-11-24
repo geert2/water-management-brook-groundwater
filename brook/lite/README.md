@@ -52,7 +52,6 @@ brook/lite/
 │   ├── field-guide.md              # Splicing, bench test, calibration, installation, troubleshooting, power
 │   ├── wiring.md                   # Level channel, power, EC, BME280, pinout
 │   ├── img/                        # Wiring and installation diagrams (SVG)
-│   ├── REFERENCES.md               # Sources for technical claims
 │   └── CHANGES.md                  # Change log
 ├── esphome/
 │   ├── secrets.yaml.example        # Template for Wi-Fi, keys, sensor height & openSenseMap IDs
@@ -61,12 +60,14 @@ brook/lite/
 │   │   ├── brook-lite-gateway.yaml # LoRa receiver + openSenseMap uploader
 │   │   └── station-package.yaml    # Everything for ONE station (reusable)
 │   └── nodes/
-│       ├── common-brook-node.yaml  # Shared node firmware
+│       ├── common-brook-node.yaml  # Node firmware
 │       └── brook-lite-node-1.yaml  # Node settings & calibration
 └── home-assistant/
     ├── dashboard-card.yaml         # Lovelace card
     └── README.md
 ```
+
+Shared with `groundwater/` and kept in [`../../shared/`](../../shared/): the Heltec V3 board, LoRa radio, gateway base and openSenseMap upload, the level and EC inputs, the formulas (`water_calc.h`), and the docs on the Heltec V3, cable splicing, EC calibration and references.
 
 ---
 
@@ -131,7 +132,7 @@ Set `sleep_minutes` in `esphome/nodes/brook-lite-node-1.yaml` (default `"10"`) a
 The full station adds turbidity, an ultrasonic level cross-check, an ADS1115, solar power, quality flags and a separate air-quality node (PM2.5/PM10). Its node and gateway use a different radio protocol, so a lite node needs the lite gateway. Both use 869.525 MHz and can share the band; at these low duty cycles collisions are rare.
 
 ## Sources
-See **[`docs/REFERENCES.md`](docs/REFERENCES.md)**.
+See **[`shared/docs/REFERENCES.md`](../../shared/docs/REFERENCES.md)** (shared with `groundwater/`).
 
 ## Known limitations
 * Duty cycle: 144 frames per day at about 0.3 s each is roughly 0.05 % airtime, far below the 10 % limit of the 869.4-869.65 MHz sub-band.

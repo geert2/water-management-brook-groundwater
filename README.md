@@ -8,7 +8,7 @@ Open-source, low-cost monitoring stations built by volunteers: **Heltec WiFi LoR
 | **Brook lite** | [`brook/lite/`](brook/lite/) | water level on the staff gauge (TL-136 0-2 m), water temperature, EC, air temperature, humidity and pressure; every 10 min; openSenseMap | validates and compiles, not yet field-tested |
 | **Brook full** ("De Meetbeek") | [`brook/full/`](brook/full/) | level (TL-136 + ultrasonic), water temperature, EC, turbidity, solar power, separate PM2.5/PM10 air node; MQTT | validates; open PRs pending |
 
-Start with the README in the project folder: each one has its own BOM, wiring notes, field guide, ESPHome configs and Home Assistant dashboard.
+Start with the README in the project folder: each one has its own BOM, wiring notes, field guide, ESPHome configs and Home Assistant dashboard. What `groundwater/` and `brook/lite/` have in common (Heltec V3 board and radio setup, gateway base, openSenseMap upload, sensor inputs, formulas, and the docs on the board, cable splicing, EC calibration and references) lives once in [`shared/`](shared/).
 
 ## Which one do I build?
 * **A well or piezometer** under farmland → `groundwater/`.
@@ -22,6 +22,7 @@ Start with the README in the project folder: each one has its own BOM, wiring no
 .github/
   workflows/esphome.yml     # CI: esphome config + compile for all three projects
   scripts/dummy-secrets.sh  # fills secrets.yaml.example with test keys for CI
+shared/                     # firmware packages and docs used by groundwater/ and brook/lite/
 groundwater/                # from geert2/Groundwater-citizen-science-sensors-with-Lora-and-Home-Assistant-
 brook/
   lite/                     # brook lite station
