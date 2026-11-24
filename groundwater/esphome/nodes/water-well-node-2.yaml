@@ -1,0 +1,16 @@
+substitutions:
+  node_name: water-well-node-2
+  friendly_name: "Well Node 2 (South Field)"
+  sleep_minutes: "60"
+
+  # Per-node calibration (see docs/field-deployment-guide.md, sections 3 and 5)
+  # zero_offset_m: "0.00"
+  # span_scale: "1.000"
+  # ec_gain: "1.000"
+  # ec_offset: "0.0"
+
+packages:
+  base: !include common-well-node.yaml
+  # Depth-channel ADC: keep ONE of the next two lines.
+  depth_adc: !include depth-adc-esp.yaml
+  # depth_adc: !include depth-adc-ads1115.yaml

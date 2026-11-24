@@ -1,0 +1,164 @@
+# Everything the gateway needs for ONE well. Instantiated from water-well-gateway.yaml
+# with these variables: well, well_label, node_name, depth_offset, box_id, token,
+# depth_id, ec_id, temp_id.
+# remote_id / broadcast_id behaviour: ESPHome packet_transport [R2] (`internal: false` verified by `esphome config` [R9]).
+# The remote_id values (d, t, ec, v) must match `broadcast_id` in common-well-node.yaml.
+
+globals:
+  - id: ${well}_last_rx_ms
+    type: uint32_t
+    initial_value: '0'
+  - id: ${well}_seen
+    type: bool
+    initial_value: 'false'
+
+number:
+  # Sensor depth below ground. Adjustable from Home Assistant, survives reboots.
+  - platform: template
+    id: ${well}_sensor_depth
+    name: "${well_label} Sensor Depth Below Ground"
+    unit_of_measurement: "m"
+    device_class: distance
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: ${depth_offset}
+    min_value: 0.5
+    max_value: 30
+    step: 0.01
+    mode: box
+
+sensor:
+  - platform: packet_transport
+    provider: ${node_name}
+    id: ${well}_water_column_m
+    remote_id: d
+    internal: false
+    name: "${well_label} Water Column Height"
+    unit_of_measurement: "m"
+    accuracy_decimals: 3
+    state_class: measurement
+    on_value:
+      then:
+        - component.update: ${well}_depth_bgl
+
+  - platform: packet_transport
+    provider: ${node_name}
+    id: ${well}_temp_c
+    remote_id: t
+    internal: false
+    name: "${well_label} Groundwater Temperature"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+
+  - platform: packet_transport
+    provider: ${node_name}
+    id: ${well}_ec_us
+    remote_id: ec
+    internal: false
+    name: "${well_label} Electrical Conductivity"
+    unit_of_measurement: "µS/cm"
+    state_class: measurement
+    accuracy_decimals: 0
+
+  - platform: template
+    id: ${well}_depth_bgl
+    name: "${well_label} Water Table Depth Below Ground"
+    unit_of_measurement: "m"
+    device_class: distance
+    state_class: measurement
+    accuracy_decimals: 3
+    update_interval: never
+    lambda: |-
+      float col = id(${well}_water_column_m).state;
+      if (isnan(col)) return NAN;
+      if (col < 0.0f) col = 0.0f;
+      return id(${well}_sensor_depth).state - col;
+
+  # BME280 in the node enclosure
+  - platform: packet_transport
+    provider: ${node_name}
+    id: ${well}_enclosure_temp
+    remote_id: bt
+    internal: false
+    name: "${well_label} Enclosure Temperature"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    entity_category: diagnostic
+    accuracy_decimals: 1
+
+  - platform: packet_transport
+    provider: ${node_name}
+    id: ${well}_air_pressure
+    remote_id: bp
+    internal: false
+    name: "${well_label} Air Pressure"
+    unit_of_measurement: "hPa"
+    device_class: atmospheric_pressure
+    state_class: measurement
+    accuracy_decimals: 1
+
+  - platform: packet_transport
+    provider: ${node_name}
+    id: ${well}_enclosure_humidity
+    remote_id: bh
+    internal: false
+    name: "${well_label} Enclosure Humidity"
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+    entity_category: diagnostic
+    accuracy_decimals: 0
+
+  # The battery value is the last one in each packet, so it triggers the upload.
+  - platform: packet_transport
+    provider: ${node_name}
+    id: ${well}_battery_v
+    remote_id: v
+    internal: false
+    name: "${well_label} Battery Voltage"
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    entity_category: diagnostic
+    accuracy_decimals: 2
+    on_value:
+      then:
+        - lambda: |-
+            id(${well}_last_rx_ms) = millis();
+            id(${well}_seen) = true;
+        - delay: 1s
+        - script.execute:
+            id: upload_to_opensensemap
+            box_id: "${box_id}"
+            token: "${token}"
+            depth_sensor_id: "${depth_id}"
+            ec_sensor_id: "${ec_id}"
+            temp_sensor_id: "${temp_id}"
+            # When the water is below the probe the depth is unknown, so it is not uploaded.
+            depth_val: !lambda |-
+              float col = id(${well}_water_column_m).state;
+              return (isnan(col) || col < 0.03f) ? NAN : id(${well}_depth_bgl).state;
+            ec_val: !lambda 'return id(${well}_ec_us).state;'
+            temp_val: !lambda 'return id(${well}_temp_c).state;'
+
+binary_sensor:
+  # True when the water level is at or below the probe (dry season / pumped down)
+  - platform: template
+    name: "${well_label} Water Below Sensor"
+    icon: mdi:water-off
+    lambda: |-
+      float col = id(${well}_water_column_m).state;
+      if (isnan(col)) return {};
+      return col < 0.03f;
+
+  - platform: template
+    name: "${well_label} Node Online"
+    device_class: connectivity
+    entity_category: diagnostic
+    lambda: |-
+      if (!id(${well}_seen)) return false;
+      return (uint32_t) (millis() - id(${well}_last_rx_ms)) < ${offline_after_ms};
