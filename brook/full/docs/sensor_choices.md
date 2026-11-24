@@ -92,7 +92,20 @@ Indicative 2026 prices; check current prices before ordering.
 | Housing | IP66 boxes, glands, PVC pipe | €22 |
 | **Total** | | **≈ €235** |
 
-This is above the original €150-200 target. Without turbidity and the air node it drops by about €60; the [lite station](../../lite/) is cheaper still.
+This is above the original €150-200 target. Without turbidity and the air node it drops by about €60.
+
+### Compared with the other stations in this repository
+
+Same basis for all three: the first station **including the gateway**, at the lower end of the price ranges, **without mounting** (post, stilling pipe, conduit, staff gauge, piezometer), which depends on the site.
+
+| Station | Measures | First station incl. gateway |
+|---------|----------|----------------------------:|
+| [Groundwater](../../../groundwater/) | depth, groundwater temperature, EC (+ optional BME280) | **≈ €115** |
+| [Brook lite](../../lite/) | level, water temperature, EC, air temperature/humidity/pressure | **≈ €130** |
+| Brook full, water node only | level (TL-136 + ultrasonic), water temperature, EC, turbidity, solar | **≈ €190** |
+| Brook full, with air node | as above + PM2.5/PM10 | **≈ €230** |
+
+Each extra station on the same gateway costs about €25 less (no second Heltec). The full station is more expensive mainly because of turbidity, the ultrasonic sensor, the ADS1115, the solar charger and panel, and the air node. Mounting at a brook adds roughly €25-50 (pipe, conduit, post), plus €30-60 for a staff gauge if there is none.
 
 ---
 

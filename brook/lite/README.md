@@ -45,7 +45,7 @@ What to expect: trustworthy **trends and events** (a storm raising the level and
 ```text
 brook/lite/
 ├── README.md                       # This file
-├── BOM.md                          # Shopping list (~€135-195 per station)
+├── BOM.md                          # Shopping list (~€110-150 per node + mounting)
 ├── LICENSE.txt                     # MIT
 ├── .gitignore                      # Excludes secrets.yaml and build caches
 ├── docs/
