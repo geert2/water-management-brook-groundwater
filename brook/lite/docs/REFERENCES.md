@@ -1,6 +1,6 @@
 # References and source check
 
-> This brook lite version was derived from the groundwater lite version; [R4] and [R18] (ADS1115) are kept for reference only, the ADS1115 is not used here. The node uses 869.525 MHz, in the 869.40-869.65 MHz sub-band, which has a 10 % duty-cycle limit (the same band as the full brook station on `main`); [R25] covers the 868.0-868.6 MHz sub-band, so check the 869.4 MHz row of ERC Rec. 70-03 for your country.
+> This brook lite version was derived from the groundwater lite version; [R4] and [R18] (ADS1115) are kept for reference only, the ADS1115 is not used here. The node uses 869.525 MHz, in the 869.40-869.65 MHz sub-band, which has a 10 % duty-cycle limit (the same band as the full brook station); [R25] covers the 868.0-868.6 MHz sub-band, so check the 869.4 MHz row of ERC Rec. 70-03 for your country.
 
 Every technical claim in this repository that comes from outside the project is listed here with the source it
 was checked against. In the YAML files and docs, `[R#]` points to the entries below.

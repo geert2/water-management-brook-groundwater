@@ -154,7 +154,7 @@ A brook reacts to rain within hours, so the node measures every **10 minutes** (
 | Per day, 5-minute cycle | about 32-45 mAh |
 
 * 2 × 3000 mAh in parallel (about 4800 mAh usable) lasts roughly **6-9 months** at 10 minutes, or **3-5 months** at 5 minutes.
-* For year-round operation without swapping batteries, add the solar kit described on the `main` branch (panel + CN3791 MPPT charger).
+* For year-round operation without swapping batteries, add the solar kit of the full station (`../../full/`) (panel + CN3791 MPPT charger).
 * Measure it: put a µA-capable meter in series with the battery for the sleep current, and time the awake phase with the LED. If the TL-136 settles faster, shorten `warmup`.
 * Estimate: mAh per day = active mA × active s ÷ 3600 × readings per day + sleep mA × 24.
 

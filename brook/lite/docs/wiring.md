@@ -24,10 +24,10 @@
 * **Valid range:** 3.5 mA to 22 mA. Outside it the node reports *unavailable* (broken wire, short, boost fault).
 
 ### Accuracy note
-The ESP32-S3 ADC reads up to about 3.1 V at 12 dB attenuation [R17] and its reference voltage varies between 1000 and 1200 mV from chip to chip [R16]. In practice that means tens of mV of error, roughly 1-3 cm of water with the 0-2 m sensor. The zero and span calibration against the staff gauge removes most of it. If you need better, the full station on the `main` branch uses an ADS1115.
+The ESP32-S3 ADC reads up to about 3.1 V at 12 dB attenuation [R17] and its reference voltage varies between 1000 and 1200 mV from chip to chip [R16]. In practice that means tens of mV of error, roughly 1-3 cm of water with the 0-2 m sensor. The zero and span calibration against the staff gauge removes most of it. If you need better, the full station (`../full/`) uses an ADS1115.
 
 ### Using a 160 Ω shunt instead
-The full station on `main` uses 160 Ω with an ADS1115. With the ESP32 ADC, 160 Ω saturates near 19.5 mA (about 3.1 V [R17][R3]), which is about 1.94 m on a 0-2 m sensor, and floods would no longer be visible. Keep 100 Ω for the lite node.
+The full station (`../full/`) uses 160 Ω with an ADS1115. With the ESP32 ADC, 160 Ω saturates near 19.5 mA (about 3.1 V [R17][R3]), which is about 1.94 m on a 0-2 m sensor, and floods would no longer be visible. Keep 100 Ω for the lite node.
 
 ## 2. Power
 
@@ -41,7 +41,7 @@ The full station on `main` uses 160 Ω with an ADS1115. With the ESP32 ADC, 160 
                       MT3608 OUT = 18.0 V  --> TL-136 V+
 ```
 
-* **Battery:** two protected 18650 cells **in parallel** (never in series; the Heltec charges one cell). The 10-minute cycle uses roughly 17-25 mAh per day (field guide, section 6), so 2 × 3000 mAh lasts about 6-9 months. For a 5-minute cycle or year-round operation without battery swaps, add the small solar kit described on `main` (panel + CN3791 MPPT charger).
+* **Battery:** two protected 18650 cells **in parallel** (never in series; the Heltec charges one cell). The 10-minute cycle uses roughly 17-25 mAh per day (field guide, section 6), so 2 × 3000 mAh lasts about 6-9 months. For a 5-minute cycle or year-round operation without battery swaps, add the small solar kit of the full station (`../full/`) (panel + CN3791 MPPT charger).
 * Li-ion must **not be charged below 0 °C**. With solar, use a charger with a temperature cut-off or accept that winter charging stops on frosty days.
 * The 220-470 µF capacitor at the boost input is a precaution against the start-up current spike browning out the ESP32. The MT3608 has internal soft start [R20], so this is a cheap safeguard rather than a fix for a known fault.
 * The TL-136 is listed with a 12 to 32 V supply [R21]; at 18 V a 160 Ω shunt (3.2 V at 20 mA) still leaves about 14.8 V. Check the label of your unit.

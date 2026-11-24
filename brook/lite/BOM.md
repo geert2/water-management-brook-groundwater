@@ -1,6 +1,6 @@
 # Bill of Materials (BOM) & Sourcing Guide - BROOK LITE
 
-> `lite` branch: water level (TL-136 0-2 m), water temperature (DS18B20), electrical conductivity (DFRobot SEN0244), air temperature, humidity and pressure (BME280). No ADS1115, turbidity, ultrasonic sensor or air-quality node (those are on `main`).
+> Brook lite station: water level (TL-136 0-2 m), water temperature (DS18B20), electrical conductivity (DFRobot SEN0244), air temperature, humidity and pressure (BME280). No ADS1115, turbidity, ultrasonic sensor or air-quality node (those are in `../full/`).
 
 This checklist covers all hardware, waterproofing consumables, and gateway parts needed to build and deploy a brook lite station. Prices are approximate (including VAT) based on Benelux/EU electronics suppliers.
 
@@ -51,7 +51,7 @@ Needed to extend the short factory cables on the EC and DS18B20 probes to the bo
 ---
 
 ## 3. Gateway at Home (~€21 - €30, One-Time Purchase)
-The gateway receives the LoRa packets and uploads them to Home Assistant and openSenseMap. It is separate from the gateway of the full station on `main` (different firmware).
+The gateway receives the LoRa packets and uploads them to Home Assistant and openSenseMap. It is separate from the gateway of the full station in `../full/` (different firmware).
 
 | Status | Component | Exact Specification | Qty | Approx. Cost | Suggested Suppliers |
 | :--- | :--- | :--- | :---: | :---: | :--- |

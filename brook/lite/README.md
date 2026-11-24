@@ -1,10 +1,10 @@
 # De Meetbeek LITE: simple citizen-science brook station (ESP32 + LoRa)
 
-> **This is the `lite` branch**: a smaller first step towards the full station on `main`.
+> **Brook lite station** (`brook/lite/`): a smaller first step towards the full station in [`../full/`](../full/).
 > It measures **water level** (TL-136, 0-2 m), **water temperature** (DS18B20), **electrical conductivity** (DFRobot SEN0244)
 > and **air temperature, humidity and pressure** (BME280). No ADS1115, turbidity sensor, ultrasonic sensor or air-quality node.
 
-The hardware and firmware are the same design as the groundwater lite version (`geert2/Groundwater-citizen-science-sensors-with-Lora-and-Home-Assistant-`, branch `lite`), adapted to a brook:
+The hardware and firmware follow the groundwater design in [`../../groundwater/`](../../groundwater/), simplified and adapted to a brook:
 
 * **0-2 m level sensor:** a brook changes at most about 2 m, so a smaller range gives finer resolution.
 * **Every 10 minutes** instead of every hour, because a brook reacts to rain within hours.
@@ -13,7 +13,7 @@ The hardware and firmware are the same design as the groundwater lite version (`
 
 A battery-powered node at the brook sends its readings over raw LoRa (869.525 MHz) to a gateway at home that feeds **Home Assistant** and the public **openSenseMap** map.
 
-> **Status:** the ESPHome configs validate and compile (ESPHome 2026.11); CI re-checks both on every push. They have **not yet been tested on hardware**. Bench-test the node first (see the field guide).
+> **Status:** the ESPHome configs validate and compile (ESPHome 2026.11); CI (in the repository root) re-checks both on every push. They have **not yet been tested on hardware**. Bench-test the node first (see the field guide).
 
 ---
 
@@ -34,7 +34,7 @@ What to expect: trustworthy **trends and events** (a storm raising the level and
 ## Key features
 * **Level against the staff gauge:** the gateway adds an editable *Sensor Height Above Gauge Zero* to the measured water above the sensor. If the probe moves, you change one number in Home Assistant; no reflashing.
 * **Flood and low-water flags:** *Level Above Sensor Range* (beyond 2 m) and *Sensor Dry*.
-* **Battery life:** sensors are only powered while measuring. Expect roughly **6-9 months** on 2 × 18650 in parallel at a 10-minute cycle; **measure it** (field guide, section 6). The solar kit from `main` can be added for year-round operation.
+* **Battery life:** sensors are only powered while measuring. Expect roughly **6-9 months** on 2 × 18650 in parallel at a 10-minute cycle; **measure it** (field guide, section 6). The solar kit of the full station (`../full/`) can be added for year-round operation.
 * **Low-battery behaviour:** below 3.4 V the node only reports its battery voltage and sleeps 2 h.
 * **Simple hardware:** two analog channels (level, EC), one 1-Wire probe, one I²C module.
 
@@ -43,12 +43,11 @@ What to expect: trustworthy **trends and events** (a storm raising the level and
 ## Repository structure
 
 ```text
+brook/lite/
 ├── README.md                       # This file
 ├── BOM.md                          # Shopping list (~€135-195 per station)
 ├── LICENSE.txt                     # MIT
 ├── .gitignore                      # Excludes secrets.yaml and build caches
-├── .github/workflows/
-│   └── esphome-validate.yml        # CI: validates and compiles the ESPHome configs
 ├── docs/
 │   ├── field-guide.md              # Splicing, bench test, calibration, installation, troubleshooting, power
 │   ├── wiring.md                   # Level channel, power, EC, BME280, pinout
@@ -128,7 +127,7 @@ Set `sleep_minutes` in `esphome/nodes/brook-lite-node-1.yaml` (default `"10"`) a
 2. Add `station_2_*` entries to `esphome/secrets.yaml`.
 3. In `esphome/gateway/brook-lite-gateway.yaml` add an `s2_*` substitution block, a provider under `packet_transport:` and a package entry under `packages:` (copy the station 1 lines, give it its own `st_label`).
 
-## Relation to the full station (`main`)
+## Relation to the full station (`../full/`)
 The full station adds turbidity, an ultrasonic level cross-check, an ADS1115, solar power, quality flags and a separate air-quality node (PM2.5/PM10). Its node and gateway use a different radio protocol, so a lite node needs the lite gateway. Both use 869.525 MHz and can share the band; at these low duty cycles collisions are rare.
 
 ## Sources
