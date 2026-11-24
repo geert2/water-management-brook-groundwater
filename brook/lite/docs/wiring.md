@@ -1,6 +1,6 @@
 # Wiring Notes (BROOK LITE): Level Channel, Power, EC, BME280 and Pinout
 
-*`[R#]` tags refer to [REFERENCES.md](REFERENCES.md).*
+*`[R#]` tags refer to [shared/docs/REFERENCES.md](../../../shared/docs/REFERENCES.md).*
 
 > Not yet tested on hardware. Build one node on the bench and check every voltage before putting the transmitter in the brook.
 
@@ -67,18 +67,7 @@ The full station (`../full/`) uses 160 Ω with an ADS1115. With the ESP32 ADC, 1
 Check the battery reading against a multimeter once. If it is off, adjust `vbat_scale` in the node file (default 4.9; a 390 k / 100 k divider [R12], while ESPHome's device page uses 2.0 [R10]).
 
 ### Board revision check (do this once per board)
-The polarity of two pins differs between Heltec V3 revisions, and the firmware has two settings for it:
-
-| Setting in the node file | V3.0 / V3.1 | V3.2 | Source |
-| :-- | :-- | :-- | :-- |
-| `vbat_ctrl_active_low` (GPIO37) | `"true"` | `"false"` (default) | [R11] [R13] |
-| `vext_active_low` (GPIO36) | `"true"` (default) | **not confirmed**, check | [R10] [R11] [R14] |
-
-1. Read the revision printed on the board (V3.2 is the current one).
-2. Battery: with the battery connected and the node awake, *Battery Voltage* should match a multimeter within a few percent after adjusting `vbat_scale`. A reading near 0 V means the polarity is wrong (the firmware then ignores the reading and carries on measuring).
-3. Vext: measure between the `Ve` pin and `GND` while the node is awake (it switches `Vext` on in early boot). About 3.3 V means the setting is right. If it reads 0 V, flip `vext_active_low`. Compare with the V3.2 schematic [R14] if in doubt.
-4. A cleaner test: flash a minimal config that only toggles `GPIO36` and `GPIO37` from two buttons or switches, and watch the voltages.
-
+Two pins (`GPIO36` Vext, `GPIO37` battery divider) differ between Heltec V3 revisions. Check them once per board as described in **[shared/docs/heltec-v3.md](../../../shared/docs/heltec-v3.md)**, and set `vext_active_low` / `vbat_ctrl_active_low` / `vbat_scale` in the node file.
 
 ## 4. Enclosure
 * Mount the box on a post **above the highest flood level you know of** (ask locals, look for debris lines on the bank). Only the probes may get wet.

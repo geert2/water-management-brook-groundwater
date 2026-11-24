@@ -1,0 +1,8 @@
+# Heltec WiFi LoRa 32 V3 (ESP32-S3, 8 MB flash), ESP-IDF framework.
+# Used by every node and gateway in groundwater/ and brook/lite/.
+esp32:
+  variant: esp32s3
+  board: esp32-s3-devkitc-1
+  flash_size: 8MB
+  framework:
+    type: esp-idf

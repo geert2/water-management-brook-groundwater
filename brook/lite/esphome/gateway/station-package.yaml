@@ -132,27 +132,21 @@ sensor:
             id(${st}_seen) = true;
         - delay: 1s
         - script.execute:
-            id: upload_to_opensensemap
+            id: upload_to_opensensemap      # shared/esphome/gateway/opensensemap.yaml
             box_id: "${box_id}"
             token: "${token}"
-            level_sensor_id: "${level_id}"
-            temp_sensor_id: "${temp_id}"
-            ec_sensor_id: "${ec_id}"
-            air_temp_sensor_id: "${air_temp_id}"
-            air_hum_sensor_id: "${air_hum_id}"
-            pressure_sensor_id: "${pressure_id}"
-            # When the sensor is dry the level is unknown (only "below the sensor"), so it is not uploaded.
-            level_val: !lambda |-
+            sensor_ids: !lambda |-
+              return std::vector<std::string>{"${level_id}", "${temp_id}", "${ec_id}",
+                                              "${air_temp_id}", "${air_hum_id}", "${pressure_id}"};
+            values: !lambda |-
+              // When the sensor is dry the level is unknown (only "below the sensor"), and a dry
+              // EC probe reads ~0, so neither is uploaded then.
               float col = id(${st}_water_column_m).state;
-              return (isnan(col) || col < 0.03f) ? NAN : id(${st}_level).state;
-            temp_val: !lambda 'return id(${st}_temp_c).state;'
-            # A dry EC probe reads ~0: only upload EC while the sensor is under water.
-            ec_val: !lambda |-
-              float col = id(${st}_water_column_m).state;
-              return (isnan(col) || col < 0.03f) ? NAN : id(${st}_ec_us).state;
-            air_temp_val: !lambda 'return id(${st}_air_temp).state;'
-            air_hum_val: !lambda 'return id(${st}_air_humidity).state;'
-            pressure_val: !lambda 'return id(${st}_air_pressure).state;'
+              bool dry = isnan(col) || col < 0.03f;
+              return std::vector<float>{dry ? NAN : id(${st}_level).state, id(${st}_temp_c).state,
+                                        dry ? NAN : id(${st}_ec_us).state, id(${st}_air_temp).state,
+                                        id(${st}_air_humidity).state, id(${st}_air_pressure).state};
+            decimals: !lambda 'return std::vector<int>{3, 2, 0, 1, 0, 1};'
 
 binary_sensor:
   # True when the water has dropped to or below the TL-136 (very low flow, or the probe moved)

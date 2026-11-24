@@ -105,18 +105,16 @@ sensor:
         - component.update: ${well}_depth_bgl
         - component.update: ${well}_qc_flags
         - script.execute:
-            id: upload_to_opensensemap
+            id: upload_to_opensensemap      # shared/esphome/gateway/opensensemap.yaml
             box_id: "${box_id}"
             token: "${token}"
-            depth_sensor_id: "${depth_id}"
-            ec_sensor_id: "${ec_id}"
-            temp_sensor_id: "${temp_id}"
-            # When the water is below the probe the depth is unknown, so it is not uploaded.
-            depth_val: !lambda |-
+            sensor_ids: !lambda 'return std::vector<std::string>{"${depth_id}", "${ec_id}", "${temp_id}"};'
+            values: !lambda |-
+              // When the water is below the probe the depth is unknown, so it is not uploaded.
               float col = id(${well}_water_column_m).state;
-              return (isnan(col) || col < 0.03f) ? NAN : id(${well}_depth_bgl).state;
-            ec_val: !lambda 'return id(${well}_ec_us).state;'
-            temp_val: !lambda 'return id(${well}_temp_c).state;'
+              float depth = (isnan(col) || col < 0.03f) ? NAN : id(${well}_depth_bgl).state;
+              return std::vector<float>{depth, id(${well}_ec_us).state, id(${well}_temp_c).state};
+            decimals: !lambda 'return std::vector<int>{3, 0, 2};'
 
   # ---- CALCULATED here (calibration constants come from water-well-gateway.yaml) ----
   # TL-136 loop current from the shunt voltage.
@@ -128,10 +126,7 @@ sensor:
     entity_category: diagnostic
     accuracy_decimals: 2
     update_interval: never
-    lambda: |-
-      float v = id(${well}_v_depth).state;
-      if (isnan(v)) return NAN;
-      return v / ${shunt_ohm} * 1000.0f;
+    lambda: 'return tl136_loop_ma(id(${well}_v_depth).state, ${shunt_ohm});'   # shared/esphome/include/water_calc.h
 
   # Water column above the sensor: TL-136 0-${tl136_range_m} m, 4-20 mA.
   - platform: template
@@ -142,12 +137,8 @@ sensor:
     accuracy_decimals: 3
     update_interval: never
     lambda: |-
-      float ma = id(${well}_loop_ma).state;
-      // Outside 3.5-22 mA means a broken wire, a short or a boost fault.
-      if (isnan(ma) || ma < 3.5f || ma > 22.0f) return NAN;
-      float depth = (ma - 4.0f) / 16.0f * ${tl136_range_m};
-      depth = depth * ${span_scale} + ${zero_offset_m};
-      return depth < -0.1f ? NAN : depth;
+      // NAN outside 3.5-22 mA (broken wire, short, boost fault); see shared/esphome/include/water_calc.h
+      return tl136_column_m(id(${well}_loop_ma).state, ${tl136_range_m}, ${span_scale}, ${zero_offset_m});
 
   # Electrical conductivity at 25 C: DFRobot cubic TDS curve [R19] + temperature compensation + your calibration.
   - platform: template
@@ -158,16 +149,10 @@ sensor:
     accuracy_decimals: 0
     update_interval: never
     lambda: |-
-      float v = id(${well}_v_ec).state;
-      if (isnan(v)) return NAN;
-      float temp = id(${well}_temp_c).state;
-      if (isnan(temp)) temp = 12.0f;   // fallback if the DS18B20 failed
-      float comp_v = v / (1.0f + 0.02f * (temp - 25.0f));
-      // TDS = EC / 2, so the 0.5 and 2.0 factors cancel.
-      float ec = 133.42f * comp_v * comp_v * comp_v - 255.86f * comp_v * comp_v + 857.39f * comp_v;
-      ec = ec * ${ec_gain} + ${ec_offset};
+      // Temperature compensation, DFRobot curve and calibration: shared/esphome/include/water_calc.h
+      float ec = sen0244_ec25(id(${well}_v_ec).state, id(${well}_temp_c).state, ${ec_gain}, ${ec_offset});
       // Outside the probe's rated range the value is not published or uploaded.
-      return (ec < 0.0f || ec > ${ec_max_us}) ? NAN : ec;
+      return (isnan(ec) || ec < 0.0f || ec > ${ec_max_us}) ? NAN : ec;
 
   - platform: template
     id: ${well}_depth_bgl

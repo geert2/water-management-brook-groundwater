@@ -1,6 +1,6 @@
 # Field Deployment & Calibration Guide (BROOK LITE)
 
-*`[R#]` tags refer to [REFERENCES.md](REFERENCES.md).*
+*`[R#]` tags refer to [shared/docs/REFERENCES.md](../../../shared/docs/REFERENCES.md).*
 
 This guide walks volunteers through waterproofing the submerged sensor cables, bench-testing, calibrating, installing, and maintaining a brook lite station (water level, water temperature, EC, air temperature, humidity and pressure).
 
@@ -9,25 +9,9 @@ This guide walks volunteers through waterproofing the submerged sensor cables, b
 ---
 
 ## 1. Waterproofing Submerged Cable Splices
-The TL-136 level probe comes with a 5 m+ factory-sealed **vented** cable (order a length that reaches from the pipe end to the box), so **never cut or splice the TL-136 cable** (doing so can block its internal atmospheric vent tube). However, the **DS18B20** and **EC probe** cables are only ~1 m and must be extended to reach the box on the bank (typically 3-5 m) using flexible waterproof rubber cable (such as 3x0.5 mm² H05RN-F).
+**Never cut or splice the TL-136 cable** (it carries the vent tube); order one long enough to reach from the pipe end to the box. The **DS18B20** and **EC probe** cables are only ~1 m and must be extended to reach the box on the bank (typically **3-5 m**).
 
-* The **DS18B20** has three wires (`VCC`, `GND`, `Data`): all three cores are spliced. *(Tip: DS18B20 probes with a 5 m factory cable exist and avoid this splice.)*
-* The **EC probe** is two stainless electrodes with **two wires**. Splice only those two (a twisted pair, or screened cable, is best because the signal is high-impedance). The module with `+ / - / A` stays in the dry enclosure.
-
-Because this splice sits underwater, follow the **Marine Triple-Seal Method**:
-
-### Materials Needed
-* **3:1 Dual-Wall Adhesive-Lined Heat-Shrink Tubing** (marine-grade; melts internal hot-melt glue when heated, not standard hobby heat-shrink).
-* **Self-Amalgamating Silicone/Rubber Tape** (hardware stores like Hubo/Brico).
-* **Flexible Rubber Cable** (extension length as needed, typically 3-5 m).
-
-### Step-by-Step Splicing Procedure
-1. **Slide tubing on first:** before soldering, slide one large outer piece of adhesive-lined heat-shrink (~10 cm long) onto the main extension cable, plus smaller pieces (~3 cm long) onto each individual inner wire.
-2. **Stagger the cuts:** cut the inner wires at slightly staggered lengths (about 1.5 cm apart). This prevents a thick lump and ensures wires cannot short together.
-3. **Solder & seal individual wires:** solder each wire pair cleanly, slide the small adhesive-lined heat-shrink over each joint, and shrink until a tiny ring of clear glue oozes out both ends.
-4. **Wrap with self-amalgamating tape:** stretch the tape tightly around the entire staggered bundle, overlapping each turn by 50 % and extending 2 cm onto the original outer cable jackets. The tape fuses into a solid rubber block.
-5. **Apply outer adhesive heat-shrink:** slide the large 10 cm tube over the rubber-wrapped joint and shrink it from the centre outward until hot-melt glue seals both ends onto the outer jackets.
-6. **Submersion bucket test:** before installing the probes in the brook, coil the spliced sections in a bucket of tap water overnight and verify that the EC and temperature readings remain stable.
+Follow the **Marine Triple-Seal Method** in **[shared/docs/cable-splicing.md](../../../shared/docs/cable-splicing.md)**: materials, the six steps and the overnight bucket test before the probes go into the brook.
 
 ---
 
@@ -62,19 +46,7 @@ Edit the values in `esphome/nodes/brook-lite-node-1.yaml` and re-flash. Check th
 *For faster testing on the bench, temporarily set `sleep_minutes: "1"` in the node file.*
 
 ### 3.2 EC sensor: two-point calibration
-Cheap analog EC/TDS probes vary from batch to batch, and the longer cable changes the response. Calibrate each probe *after* extending its cable. Set `ec_gain: "1.0"` and `ec_offset: "0.0"` first so you read the raw value.
-
-1. **Rinse & dry:** rinse the probe tips with distilled water and blot dry.
-2. **Low standard:** place the **EC probe and the DS18B20** in **84 µS/cm** solution; swirl to remove air bubbles; wait 60 s. Trigger a reading (press **RST** once) and note the reported *Electrical Conductivity* as `M1`.
-3. **High standard:** rinse and repeat with **1413 µS/cm**, giving `M2`.
-4. **Calculate:**
-   `ec_gain = (1413 - 84) / (M2 - M1)`
-   `ec_offset = 84 - ec_gain × M1`
-5. Put both numbers in the node file, re-flash, and verify that both standards now read correctly.
-
-*Single-point fallback (only 1413 µS/cm available):* `ec_gain = 1413 / M`, `ec_offset = 0`. This is less accurate, especially at low conductivity.
-
-Note: the DFRobot analog sensor is specified for 0-1000 ppm TDS (about 0-2000 µS/cm at the usual 0.5 factor) with an accuracy of ±10 % of full scale at 25 °C [R19]. Treat readings above that range as "high", not as precise numbers, and expect a few hundred µS/cm of uncertainty even after calibration.
+Follow **[shared/docs/ec-calibration.md](../../../shared/docs/ec-calibration.md)** (84 and 1413 µS/cm standards). In this project the result goes into the **node** file: `ec_gain` and `ec_offset` in `esphome/nodes/brook-lite-node-1.yaml`, then re-flash the node over USB.
 
 ### 3.3 Temperature, humidity and pressure: sanity check
 The DS18B20 (±0.5 °C) and the BME280 (±1 °C, ±3 % RH, ±1 hPa [R24]) need no calibration. Check them once on the bench against a reference (see section 2). If one is consistently off, you can add an offset filter to that sensor in `common-brook-node.yaml` (ESPHome `filters: - offset: -0.4`).

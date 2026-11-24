@@ -1,0 +1,56 @@
+# openSenseMap upload for a gateway: one HTTP POST per received packet [R26][R27][R28].
+#
+# Call it from a station package with three lists of the same length:
+#   - script.execute:
+#       id: upload_to_opensensemap
+#       box_id: "..."
+#       token: "..."
+#       sensor_ids: !lambda 'return std::vector<std::string>{"id-depth", "id-temp"};'
+#       values:     !lambda 'return std::vector<float>{id(depth).state, id(temp).state};'
+#       decimals:   !lambda 'return std::vector<int>{3, 2};'
+# A NaN value is skipped (a NaN would make the whole JSON invalid).
+#
+# Set `gateway_useragent` in the project's substitutions, e.g. "esphome/groundwater-gateway".
+http_request:
+  useragent: ${gateway_useragent}
+  timeout: 10s
+  watchdog_timeout: 20s
+
+script:
+  - id: upload_to_opensensemap
+    mode: queued
+    max_runs: 5
+    parameters:
+      box_id: string
+      token: string
+      sensor_ids: string[]
+      values: float[]
+      decimals: int[]
+    then:
+      - http_request.post:
+          url: !lambda 'return "https://api.opensensemap.org/boxes/" + box_id + "/data";'
+          request_headers:   # not `headers` [R6]
+            Content-Type: application/json
+            # openSenseMap expects the box access token as-is (no "Bearer " prefix) [R26][R28]
+            Authorization: !lambda 'return token.c_str();'   # header lambdas must return const char*
+          body: !lambda |-
+            std::string p = "[";
+            size_t n = std::min(sensor_ids.size(), std::min(values.size(), decimals.size()));
+            for (size_t i = 0; i < n; i++) {
+              if (std::isnan(values[i])) continue;
+              char buf[96];
+              snprintf(buf, sizeof(buf), R"({"sensor":"%s","value":%.*f})",
+                       sensor_ids[i].c_str(), decimals[i], values[i]);
+              if (p.size() > 1) p += ",";
+              p += buf;
+            }
+            p += "]";
+            return p;
+          on_response:
+            then:
+              - lambda: |-
+                  if (response->status_code >= 300)
+                    ESP_LOGW("osem", "openSenseMap upload failed, HTTP %d", response->status_code);
+          on_error:
+            then:
+              - lambda: 'ESP_LOGW("osem", "openSenseMap upload failed (network error)");'

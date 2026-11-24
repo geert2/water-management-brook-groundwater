@@ -1,6 +1,6 @@
-# Depth channel read with an external ADS1115 16-bit ADC (I2C, powered from Vext).
-# Differential input A0-A1 across the shunt resistor, see docs/wiring.md section 1.
-# Select this file in the node YAML instead of depth-adc-esp.yaml.
+# TL-136 level/depth channel read with an external ADS1115 16-bit ADC (I2C, powered from Vext).
+# Differential input A0-A1 across the shunt resistor, see groundwater/docs/wiring.md section 1.
+# Select this file in the node YAML instead of tl136-adc-esp.yaml.
 
 # ESPHome ads1115 options [R4]; inputs must stay within GND-0.3 V .. VDD+0.3 V [R18].
 substitutions:

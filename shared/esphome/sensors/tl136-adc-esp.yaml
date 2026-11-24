@@ -1,5 +1,6 @@
-# Depth channel read with the ESP32-S3's built-in ADC (default, no extra part).
-# Shunt voltage on GPIO5 (through the 1 kohm + clamp network, see docs/wiring.md).
+# TL-136 level/depth channel read with the ESP32-S3's built-in ADC (default, no extra part).
+# Shunt voltage on GPIO5 (through the 1 kohm + clamp network, see the project's docs/wiring.md).
+# Convert with tl136_loop_ma() / tl136_column_m() from shared/esphome/include/water_calc.h.
 # 12 dB attenuation reads up to about 3.1 V on the ESP32-S3 [R17][R3]; the reference voltage varies by chip [R16].
 sensor:
   - platform: adc

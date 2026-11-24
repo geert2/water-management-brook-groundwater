@@ -1,0 +1,71 @@
+# Common part of every battery-powered field node (Heltec V3, deep sleep).
+# The project file adds: esphome name/on_boot, packet_transport, its sensors and the
+# measure_and_sleep script. See shared/docs/heltec-v3.md for the board details.
+#
+# Defaults below can be overridden in the project's `substitutions:` (the project wins).
+substitutions:
+  # Battery divider on the Heltec V3 (390k/100k = x4.9) [R12].
+  vbat_scale: "4.9"              # calibrate against a multimeter; ESPHome's device page uses 2.0 [R10]
+  # ADC_Ctrl (GPIO37) polarity DEPENDS ON THE BOARD REVISION [R11][R13]:
+  #   V3.0 / V3.1: pull-up on the pin, LOW connects the divider  -> "true"
+  #   V3.2 (sold since ~2023, check the silkscreen): transistor, HIGH connects it -> "false"
+  vbat_ctrl_active_low: "false"
+  # Vext (GPIO36) enable level. ESPHome's device page and the V3/V3.1 behaviour: LOW = ON [R10].
+  # V3.2 changed Vext to an LDO [R11]; its polarity was NOT confirmed. Verify with a multimeter.
+  vext_active_low: "true"
+
+packages:
+  board: !include board.yaml
+  lora: !include lora.yaml
+
+esphome:
+  includes:
+    - ../include/water_calc.h    # tl136_column_m(), sen0244_ec25(), ...
+
+esp32:
+  cpu_frequency: 80MHZ           # lower clock = lower active current
+
+logger:
+  level: WARN
+
+output:
+  - platform: gpio
+    pin: GPIO36
+    id: vext_power
+    inverted: ${vext_active_low}   # "true": LOW = ON, HIGH = OFF
+  - platform: gpio
+    pin: GPIO37
+    id: vbat_adc_enable
+    inverted: ${vbat_ctrl_active_low}   # see vbat_ctrl_active_low above (board revision)
+  - platform: gpio
+    pin: GPIO35
+    id: status_led               # flashes briefly at every wake-up
+
+# DS18B20 bus
+one_wire:
+  - platform: gpio
+    pin: GPIO4
+
+# Separate I2C bus (not the onboard OLED bus) for the BME280 / ADS1115, powered from Vext.
+# 50 kHz also tolerates a short (< 1 m) cable to an outdoor BME280.
+i2c:
+  sda: GPIO41
+  scl: GPIO42
+  scan: false
+  frequency: 50kHz
+
+sensor:
+  # Node battery voltage (read with the divider enabled through GPIO37, see the project's script)
+  - platform: adc
+    pin: GPIO1
+    id: battery_voltage_v
+    name: "Battery Voltage"
+    attenuation: 2.5db           # high-impedance divider, lower range = better accuracy
+    samples: 8
+    sampling_mode: avg
+    update_interval: never
+    filters:
+      - multiply: ${vbat_scale}
+
+deep_sleep:
+  id: deep_sleep_control

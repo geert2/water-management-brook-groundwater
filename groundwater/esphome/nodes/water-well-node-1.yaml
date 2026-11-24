@@ -8,5 +8,5 @@ substitutions:
 packages:
   base: !include common-well-node.yaml
   # Depth-channel ADC: keep ONE of the next two lines.
-  depth_adc: !include depth-adc-esp.yaml
-  # depth_adc: !include depth-adc-ads1115.yaml
+  depth_adc: !include ../../../shared/esphome/sensors/tl136-adc-esp.yaml
+  # depth_adc: !include ../../../shared/esphome/sensors/tl136-adc-ads1115.yaml

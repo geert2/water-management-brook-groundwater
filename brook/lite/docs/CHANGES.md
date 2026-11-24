@@ -1,5 +1,11 @@
 # Changes
 
+## Shared parts moved to `shared/` (24 November 2026)
+* Board, LoRa radio, outputs, buses, battery sensor, deep sleep, the level and EC inputs, the gateway base and the openSenseMap upload now come from `shared/esphome/` (same as `groundwater/`).
+* Level and EC formulas: `shared/esphome/include/water_calc.h` (same results).
+* `docs/REFERENCES.md` is now `shared/docs/REFERENCES.md`; cable splicing, EC calibration and the board-revision check are in `shared/docs/`.
+* Checked by rendering both configs with `esphome config` before and after: only the formulas, the upload call and the header include differ.
+
 ## 24 November 2026: moved into `water-management-brook-groundwater`
 * Now lives in `brook/lite/` of the combined repository, next to `brook/full/` and `groundwater/`. CI runs from the repository root.
 

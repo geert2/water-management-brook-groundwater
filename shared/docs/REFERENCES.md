@@ -1,5 +1,9 @@
 # References and source check
 
+*Shared by `groundwater/` and `brook/lite/` (and the code in `shared/`): the `[R#]` tags in their YAML comments and docs point here.*
+
+> **Frequency note:** [R25] covers the 868.0-868.6 MHz sub-band used by `groundwater/` (868.1 MHz, 1 % duty cycle). `brook/lite/` (and `brook/full/`) use 869.525 MHz in the 869.40-869.65 MHz sub-band, which has a 10 % duty-cycle limit; check the 869.4 MHz row of ERC Rec. 70-03 for your country. The primary CEPT text has not been read for either.
+
 Every technical claim in this repository that comes from outside the project is listed here with the source it
 was checked against. In the YAML files and docs, `[R#]` points to the entries below.
 
