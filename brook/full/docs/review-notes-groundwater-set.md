@@ -1,6 +1,24 @@
 # De Meetbeek: review notes from the groundwater sensor set
 
-*20 November 2026. Written against the files in this repository on `main` (commit `137d432`).*
+*20 November 2026. Written against the files of the former `citizen-science-Brook-monitoring-` repository (commit `137d432`). Status updated 24 November 2026, after the move into `water-management-brook-groundwater`.*
+
+## Status on 24 November 2026
+
+| # | Point | Status |
+|---|-------|--------|
+| 1 | TL-136 supply at full scale | **Done** (PR #3): 120 Ω shunt, 12.6 V at the sensor at 20 mA with a 15 V booster, 12 V treated as the minimum. Still measure it on the bench. |
+| 2 | ADS1115 input protection | **Done** (PR #3): 4.7 kΩ series resistor and optional BAT54S clamp on `A0`; worst-case input current 2-3 mA. |
+| 3 | LoRa payload plain text, unauthenticated | **Open.** The full station still sends the `B1,...` line in plain text. Possible fix: switch to `packet_transport` with encryption, as `groundwater/` and `brook/lite/` do. |
+| 4 | V3.2 battery-divider default | **Partly.** The node file says to try `"false"` if the battery reads about 0 V. Check the silkscreen revision before deployment. |
+| 5 | Vext load of the two boosters | **Open.** Still powered from Vext. `groundwater/` now has a tested-in-CI MOSFET switch on `GPIO7` (PR #4) that could be reused here. Measure the Vext current first. |
+| 6 | Packet counter in RTC memory | **Compiles** in both `brook/full/` and `groundwater/` (CI). Behaviour over deep sleep still to be checked on hardware. |
+| 7 | Air temperature for the speed of sound | **Open.** The gateway still uses the water temperature as a proxy. The air node's BME280 could provide it. |
+| 8 | Cite the frequency rules | **Open.** The README states the 10 % sub-band rule without a source. `brook/lite/docs/REFERENCES.md` has the same gap (secondary sources only). |
+| - | Repository housekeeping (all four items) | **Done** (PR #2): tracked `secrets.yaml`, `gitignore.txt`, `brook-Gateway.yaml` and the old `configuration.yaml` are gone. |
+
+About the `encryption_key` in the history: the value in the old `brook-Gateway.yaml` / `secrets.yaml` is the sample `00112233445566778899AABBCCDDEEFF`, not a real key. It is harmless, but never use it on a real device.
+
+The text below is the original review, unchanged apart from this status section and the comparison table.
 
 The Meetbeek set and the groundwater set share the same core (Heltec V3, TL-136 4–20 mA loop,
 DS18B20, analog EC probe, raw LoRa, ESPHome, Home Assistant), so each has lessons for the other.
@@ -70,25 +88,23 @@ These were found while reading the repository on GitHub. They are separate from 
   gateway does not appear to publish (its MQTT prefix is `brook/gateway`, and Home Assistant receives
   the data through the ESPHome API). It looks like it belongs to the old design.
 
-## Side by side
+## Side by side (updated 24 November 2026)
 
-The two sets measure different things, so the differences follow the water body: a brook has fast
-events, a well changes slowly.
-
-| Topic | Meetbeek (brook) | Groundwater set (well) |
-| --- | --- | --- |
-| Measures | level, temperature, EC, turbidity, ultrasonic level, air quality | water column, EC, temperature, BME280 |
-| Interval | 5 min | 60 min (setting `sleep_minutes`) |
-| Awake per cycle | about 12–15 s | about 3 s |
-| Power | 2×18650 in parallel, CN3791 MPPT, 12 V panel | one 18650, no panel |
-| ADC | ADS1115 for all analog inputs | ESP32 ADC by default, ADS1115 optional |
-| Shunt | 160 Ω (3.2 V at 20 mA) | 100 Ω (160 Ω works up to about 4.8 m with the ESP32 ADC) |
-| Boost converters | two MT3608 (about 15 V and 5 V), input from Vext | one MT3608 (18 V), input from the battery through a MOSFET switch (now) |
-| LoRa | 869.525 MHz, SF9, CR 4/6, 10 % duty cycle | 868.1 MHz, SF9, CR 4/5, 1 % duty cycle |
-| Payload | own ASCII line `B1,...`, sent twice, plain text | `packet_transport`, one frame, encrypted |
-| Calibration | in the gateway, node sends raw volts | in the gateway (now), node sends raw volts |
-| Quality control | QC flag bits, lost and reset counters | same (now), plus a low-battery guard |
-| Cloud | MQTT, sensor.community | openSenseMap |
+| Topic | Brook full (`brook/full/`) | Brook lite (`brook/lite/`) | Groundwater (`groundwater/`) |
+| --- | --- | --- | --- |
+| Measures | level, temperature, EC, turbidity, ultrasonic level, air quality (separate node) | level, temperature, EC, air temperature/humidity/pressure | water column, temperature, EC, optional BME280 |
+| Interval | 5 min | 10 min | 60 min |
+| Awake per cycle | about 12-15 s | about 3.5 s | about 3-4 s |
+| Power | 2×18650 in parallel, CN3791 MPPT, 12 V panel | 2×18650 in parallel, no panel | one 18650, no panel |
+| ADC | ADS1115 for all analog inputs | ESP32 ADC | ESP32 ADC, ADS1115 optional |
+| Shunt | 120 Ω (2.4 V at 20 mA) | 100 Ω | 100 Ω |
+| Boost converters | two MT3608 (about 15 V and 5 V), input from Vext | one MT3608 (18 V), input from Vext | one MT3608 (18 V), input from the battery through a MOSFET switch |
+| LoRa | 869.525 MHz, SF9, CR 4/6 | 869.525 MHz, SF9, CR 4/5 | 868.1 MHz, SF9, CR 4/5 |
+| Payload | own ASCII line `B1,...`, sent twice, plain text | `packet_transport`, one frame, encrypted | `packet_transport`, one frame, encrypted |
+| Calibration | in the gateway, node sends raw volts | in the node | in the gateway, node sends raw volts |
+| Quality control | QC flag bits, lost and reset counters | *Sensor Dry*, *Level Above Sensor Range*, low-battery guard | QC flag bits, lost and reset counters, low-battery guard |
+| Cloud | MQTT, sensor.community | openSenseMap | openSenseMap |
+| Builds in CI | yes | yes | yes |
 
 ## What the groundwater set took from Meetbeek
 
@@ -113,6 +129,6 @@ Not taken over: the duplicate transmission, the ultrasonic cross-check, the turb
 - [ ] Settling time of the TL-136 loop after the booster starts.
 - [ ] Supply voltage at the TL-136 terminals at 20 mA (see point 1).
 - [ ] Actual LoRa frame size and airtime for the `B1,...` line.
-- [ ] A real `esphome compile`.
+- [x] A real `esphome compile` (CI, all three projects, 24 November 2026).
 
 *Sources: the Meetbeek files listed above and `docs/REFERENCES.md` of the groundwater repository.*
