@@ -55,6 +55,7 @@ mqtt:
   password: !secret mqtt_password
   topic_prefix: brook/air
   discovery: false
+  reboot_timeout: 0s               # never reboot because the broker is unreachable (default: 15 min)
 
 # TLS to api.sensor.community. If you see certificate errors in the log,
 # set verify_ssl: false (the data is public anyway).

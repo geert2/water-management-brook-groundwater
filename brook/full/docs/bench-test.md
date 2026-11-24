@@ -19,7 +19,8 @@ fails, fix it before continuing.
       (shorten `offline_after_ms` to test).
 
 ## C. Sensors, one by one (values from the node log, `-999` = not connected)
-- [ ] **Battery:** `vbat` matches a multimeter within about 0.1 V.
+- [ ] **Battery:** `vbat` matches a multimeter within about 0.1 V (the node reads it at rest, before the boosters start, so compare with the multimeter reading at rest).
+- [ ] **Low-battery mode:** on a bench supply, lower the battery voltage to 3.3 V. The log shows *Battery low ... sensors skipped*, the TX line has `-999` for every sensor, the boosters stay off (0 V on both rails), and the next wake-up is 15 minutes later. Raise the voltage again and the normal cycle returns.
 - [ ] **DS18B20:** water temperature is plausible (room temperature in air; warms in your hand).
 - [ ] **TL-136:** in air the loop voltage is about 0.48 V (4 mA × 120 Ω). Lifting the probe
       out of water returns it there. Under about 3.6 mA means a wiring fault.

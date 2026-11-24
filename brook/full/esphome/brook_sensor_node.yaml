@@ -8,9 +8,12 @@
 # Power  : 2x18650 (parallel) + CN3791 + 12 V solar panel
 #
 # HOW IT WORKS
-#   1. Node wakes from deep sleep, powers the sensors, takes ${samples} readings.
-#   2. It sends the RAW values (volts, deg C, metres) in one small text packet.
-#   3. It goes back to sleep. All calibration happens in the GATEWAY, so you
+#   1. Node wakes from deep sleep and reads the battery at rest (boosters still off).
+#   2. Battery low? It sends only the battery voltage and sleeps ${low_battery_sleep}
+#      without powering the sensors, so a dark week cannot drain the cells.
+#   3. Otherwise it powers the sensors, takes ${samples} readings and sends the RAW
+#      values (volts, deg C, metres) in one small text packet.
+#   4. It goes back to sleep. All calibration happens in the GATEWAY, so you
 #      can re-calibrate without climbing down to the stream.
 #
 # Payload format (version "B1"), ASCII, comma separated:
@@ -34,6 +37,13 @@ substitutions:
   # --- Timing ------------------------------------------------------------------
   sleep_time: 5min               # time between measurements
   samples: "5"                   # readings per wake-up (the median is sent)
+
+  # --- Low battery ----------------------------------------------------------------
+  # Below this voltage (read at rest, before the boosters start) the node skips the
+  # sensors and only reports its battery voltage. Readings under 2 V are treated as a
+  # wrong vbat_ctrl_inverted setting, not as an empty battery, and are ignored.
+  low_battery_v: "3.4"
+  low_battery_sleep: 15min       # < offline_after_ms in the gateway, so Node Online stays on
 
   # --- Heltec V3 battery sense (on-board divider) ------------------------------
   vbat_divider: "4.9"            # (390k + 100k) / 100k. Tune with a multimeter.
@@ -197,18 +207,16 @@ sensor:
           send_every: ${samples}
           send_first_at: ${samples}
 
-  # Battery voltage through the Heltec on-board divider (GPIO1)
+  # Battery voltage through the Heltec on-board divider (GPIO1).
+  # Read ONCE per wake-up, at rest (boosters off), averaging 16 ADC samples.
   - platform: adc
     pin: GPIO1
     id: vbat_adc
     attenuation: 6db
-    samples: 8
+    samples: 16
+    sampling_mode: avg
     update_interval: never
     filters:
-      - median:
-          window_size: ${samples}
-          send_every: ${samples}
-          send_first_at: ${samples}
       - multiply: ${vbat_divider}
 
 # --- Measurement + transmit sequence ----------------------------------------
@@ -216,27 +224,63 @@ script:
   - id: measure_and_send
     mode: single
     then:
-      - switch.turn_on: boost_enable
+      # 1. Battery at rest: divider on, boosters still OFF (their ~200 mA would make it sag)
       - switch.turn_on: vbat_divider_enable
-      - delay: 3s                      # let probes and boosters settle
-      - repeat:
-          count: ${samples}
-          then:
-            - component.update: ds_water_temp
-            - component.update: ads_loop
-            - delay: 150ms
-            - component.update: ads_ec
-            - delay: 150ms
-            - component.update: ads_turb
-            - delay: 150ms
-            - component.update: vbat_adc
-            - component.update: us_dist
-            - delay: 700ms
-      - delay: 500ms
-      - switch.turn_off: boost_enable
+      - delay: 50ms
+      - component.update: vbat_adc
       - switch.turn_off: vbat_divider_enable
+
+      # 2. Low battery: report the voltage only (other fields -999), then sleep longer.
+      #    Otherwise: the normal cycle.
+      - if:
+          condition:
+            lambda: |-
+              float v = id(vbat_adc).state;
+              return !std::isnan(v) && v > 2.0f && v < ${low_battery_v};
+          then:
+            - logger.log:
+                level: WARN
+                format: "Battery low (%.2f V): sensors skipped, sleeping ${low_battery_sleep}"
+                args: ['id(vbat_adc).state']
+            - script.execute: send_payload
+            - script.wait: send_payload
+            - sx126x.set_mode_sleep:
+                cold: true
+            - deep_sleep.enter:
+                id: deep_sleep_1
+                sleep_duration: ${low_battery_sleep}
+          else:
+            # 3. Normal cycle: power the sensors and let probes and boosters settle
+            - switch.turn_on: boost_enable
+            - delay: 3s
+            - repeat:
+                count: ${samples}
+                then:
+                  - component.update: ds_water_temp
+                  - component.update: ads_loop
+                  - delay: 150ms
+                  - component.update: ads_ec
+                  - delay: 150ms
+                  - component.update: ads_turb
+                  - delay: 150ms
+                  - component.update: us_dist
+                  - delay: 700ms
+            - delay: 500ms
+            - switch.turn_off: boost_enable
+            - script.execute: send_payload
+            - script.wait: send_payload
+            - sx126x.set_mode_sleep:
+                cold: true
+            - deep_sleep.enter:
+                id: deep_sleep_1
+
+  # Builds the B1 line from the current states and sends it twice.
+  # In low-battery mode the sensors were never read, so their fields are -999.
+  - id: send_payload
+    mode: single
+    then:
       - lambda: |-
-          // Sequence number survives deep sleep (RTC memory) and restarts at 0
+          // Sequence number survives deep sleep (RTC memory) and starts again at 1
           // after a power loss, which the gateway reports as a "node reset".
           static RTC_DATA_ATTR uint32_t seq = 0;
           seq++;
@@ -259,7 +303,3 @@ script:
       - sx126x.send_packet:
           data: !lambda 'return std::vector<uint8_t>(id(tx_payload).begin(), id(tx_payload).end());'
       - delay: 500ms
-      - sx126x.set_mode_sleep:
-          cold: true
-      - deep_sleep.enter:
-          id: deep_sleep_1

@@ -18,6 +18,22 @@
 
 About the `encryption_key` in the history: the value in the old `brook-Gateway.yaml` / `secrets.yaml` is the sample `00112233445566778899AABBCCDDEEFF`, not a real key. It is harmless, but never use it on a real device.
 
+## Second review, 24 November 2026
+
+A full read of the firmware, docs and dashboard on `main`. Nothing that would block a bench test; the points are about behaviour in winter, after failures and data quality.
+
+| # | Finding | Status |
+|---|---------|--------|
+| A | No low-battery protection: the node kept measuring until the cells cut out | **Fixed**: below 3.4 V (read at rest) it skips the sensors, reports the battery and sleeps 15 min |
+| B | Without an MQTT broker the gateway (and the air node) rebooted every 15 min (ESPHome's default `reboot_timeout`), resetting the counters | **Fixed**: `reboot_timeout: 0s` |
+| C | Values that failed their check (level with a broken loop, EC out of range, ...) were still published as numbers, also to MQTT | **Fixed**: published as *unknown*; flags and raw values unchanged |
+| D | Battery measured with both boosters on (~200 mA), so it sagged and the low-battery flag tripped early | **Fixed**: read first, at rest |
+| E | TL-136 range 0-1 m, while the brook can change by up to 2 m | **Open**, needs a different sensor (0-2 m, as on `brook/lite`) |
+| F | Ultrasonic speed of sound uses the water temperature; the docs understated the error | Docs corrected (2-3 cm at 1 m in summer). **Open**: an air DS18B20 under the box would fix it |
+| G | JSN-SR04T in a narrow tube gives wall echoes; some versions output a 3.3 V echo that the divider makes too low | **Open**: use a tube of at least 10 cm, check the echo level on the bench |
+| H | Air node BME280 in the same box as the ESP32 and SDS011 reads warm | **Open** |
+| I | Gateway and air node have the same name ("De Meetbeek") in Home Assistant | **Open** (cosmetic) |
+
 The text below is the original review, unchanged apart from this status section and the comparison table.
 
 The Meetbeek set and the groundwater set share the same core (Heltec V3, TL-136 4–20 mA loop,

@@ -35,7 +35,7 @@ Formula used: `level = (mA − 4) / 16 × range + offset`.
 2. Measure from the sensor face down to that zero with a ruler: `us_mount_height_m`.
 3. Compare at 2–3 water levels. Adjust `us_zero_offset_m`.
 4. The speed of sound is corrected automatically using the water temperature as a stand-in
-   for the air temperature (error at most about 1 cm at 50 cm distance).
+   for the air temperature. Every 10 °C difference between water and air gives about 1.8 % distance error: about 1 cm at 50 cm, and 2-3 cm at 1 m on a warm summer day. Keep that in mind when comparing it with the TL-136.
 
 The ultrasonic reading and the TL-136 should agree. A growing difference between them is an
 early warning that one sensor is drifting or fouled.
