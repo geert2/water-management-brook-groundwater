@@ -6,8 +6,8 @@ This checklist covers all hardware, waterproofing consumables, and gateway parts
 
 ---
 
-## 1. Field Node at the Brook (~€135 - €195)
-One per measuring point.
+## 1. Field Node at the Brook (~€110 - €150, plus ~€25 - €50 mounting)
+One per measuring point. Electronics, sensors and enclosure come to about **€110 - €150**; the stilling pipe, conduit, post and pull line add about **€25 - €50**, and a staff gauge **€30 - €60** if there is none yet. With the gateway (section 3), the first station is about **€130** at the lower end of the price ranges (compare: groundwater ≈ €115, full brook station ≈ €190 without its air node).
 
 | Status | Component | Exact Specification | Qty | Approx. Cost | Suggested Suppliers (BE / NL / EU) |
 | :--- | :--- | :--- | :---: | :---: | :--- |

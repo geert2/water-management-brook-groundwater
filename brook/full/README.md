@@ -83,7 +83,7 @@ esphome/
 home-assistant/
   ui-lovelace.yaml         dashboard (no other Home Assistant YAML needed)
 docs/
-  wiring.md  calibration.md  bench-test.md
+  wiring.md  calibration.md  bench-test.md  sensor_choices.md (why each sensor)
 ```
 
 ## Quick start
