@@ -44,7 +44,9 @@ It works if your water column stays below about 4.8 m (the ESP32-S3 ADC saturate
 
 ## 2. Power
 
-![Boost converter power switch](img/boost-switch.svg)
+![Boost converter power switch](../../shared/docs/img/boost-switch.svg)
+
+Parts, soldering the SOT-23 MOSFET on an adapter and a bench test: **[shared/docs/boost-switch.md](../../shared/docs/boost-switch.md)**.
 
 ```text
 18650 --> Heltec battery connector --> 3.3 V regulator --> Vext switch (GPIO36 LOW = ON)

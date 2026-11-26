@@ -8,8 +8,8 @@ This checklist covers all hardware, waterproofing consumables, and gateway parts
 
 ---
 
-## 1. Field Node at the Brook (~€110 - €150, plus ~€25 - €50 mounting)
-One per measuring point. Electronics, sensors and enclosure come to about **€110 - €150**; the stilling pipe, conduit, post and pull line add about **€25 - €50**, and a staff gauge **€30 - €80** if there is none yet. With the gateway (section 3), the first station is about **€130** at the lower end of the price ranges (compare: groundwater ≈ €115, full brook station ≈ €190 without its air node).
+## 1. Field Node at the Brook (~€111 - €151, plus ~€25 - €50 mounting)
+One per measuring point. Electronics, sensors and enclosure come to about **€111 - €151**; the stilling pipe, conduit, post and pull line add about **€25 - €50**, and a staff gauge **€30 - €80** if there is none yet. With the gateway (section 3), the first station is about **€130** at the lower end of the price ranges (compare: groundwater ≈ €115, full brook station ≈ €190 without its air node).
 
 | Status | Component | Exact Specification | Qty | Approx. Cost | Where to Buy (BE / NL / EU) |
 | :--- | :--- | :--- | :---: | :---: | :--- |
@@ -23,6 +23,7 @@ One per measuring point. Electronics, sensors and enclosure come to about **€1
 | [ ] | **Shunt Resistor** | **100 Ω** metal film, **0.1 %** (25 ppm), 0.25 W | 1 | €0.50 | [Reichelt RC55Y-100RB](https://www.reichelt.com/de/en/shop/product/metal_film_resistor_100_ohm_axial_250_mw_0_1_-237001); see *Small parts shopping list* |
 | [ ] | **Input Protection** | 1 kΩ resistor, **3.6 V zener** (e.g. BZX84C3V6 or 1N5227B), 100 nF ceramic capacitor | 1 set | €0.50 | Zener: [Reichelt BZX79C3V6](https://www.reichelt.com/de/en/zener-diode-0-5-w-3-6-v-zf-3-6-p23127.html); 1 kΩ: Otronic [10× 1 kΩ](https://www.otronic.nl/nl/10x-weerstand-1k-ohm-1-4-watt-5.html); 100 nF: Otronic [100 nF 50 V ceramic](https://www.otronic.nl/en/ceramic-disc-capacitor-104-50v-01uf-100nf-10.html) |
 | [ ] | **Boost Input Capacitor** | 220 - 470 µF low-ESR electrolytic, ≥ 10 V | 1 | €0.50 | [Gotron 470 µF 16 V](https://www.gotron.be/electrolytic-capacitor-470-f-16v-8x11-5mm-105-c-p3-5.html), [Otronic 10× 470 µF 16 V](https://www.otronic.nl/en/10x-capacitor-470uf-16v-electrolytic-elco-black) |
+| [ ] | **Boost power switch** | AO3401A P-MOSFET (SOT-23, on an adapter board), 2N7002 (SOT-23) or 2N7000 (TO-92) N-MOSFET, 2 x 100 kΩ, 1 x 100 Ω (0.25 W). Switches the MT3608 input from the battery. How to solder the SOT-23 part: [boost-switch.md](../../shared/docs/boost-switch.md) | 1 set | €1 | [Reichelt AO3401A](https://reichelt.com/de/en/mosfet-p-ch-30v-4a-sot-23-ao-3401a-p166486.html) + [SOT-23 adapter](https://www.tinytronics.nl/en/tools-and-mounting/prototyping-supplies/breakout-boards); [TinyTronics 2N7000](https://www.tinytronics.nl/en/switches/transistors-and-mosfets/mosfets-fets/2n7000-fet-60v-200ma); resistors: Otronic [10× 100 kΩ](https://www.otronic.nl/en/10x-resistor-100k-ohm-1-4-watt-5.html), [10× 100 Ω](https://www.otronic.nl/en/10x-resistor-100-ohm-1-4-watt-5.html) |
 | [ ] | **Pull-Up Resistor** | 4.7 kΩ resistor (0.25 W, for DS18B20 data line) | 1 | €0.10 | Otronic [10× 4.7 kΩ](https://www.otronic.nl/en/10x-resistance-4k7-ohm-1-4-watt-5.html) *(included with the Kiwi DS18B20)* |
 | [ ] | **Batteries & Holder** | 2 × **protected** 18650 Li-Ion cells (3000 mAh+, e.g. Samsung 35E with protection), **in parallel**, + 2-cell holder wired in parallel (1S2P) | 2 | €16 - €24 | Cells: [NKON Keeppower 18650 3500 mAh protected, button top](https://www.nkon.nl/en/keeppower-18650-3500-li-ion.html) (~€10 each); holder: [TinyTronics 2× with wires per cell](https://www.tinytronics.nl/en/power/battery-holders-and-clips/18650/2x-18650-battery-holder-leaf-spring-contacts-wires-per-cell) (easiest to wire in parallel) or [2× button top](https://www.tinytronics.nl/en/power/battery-holders-and-clips/18650/2x-18650-battery-holder-with-loose-wires-button-top) |
 | [ ] | **Waterproof Enclosure** | IP65 Outdoor Junction Box (approx. 150 x 110 x 70 mm) | 1 | €7 - €9 | [Gotron G313MF 171×121×55 IP65](https://www.gotron.be/waterbestendige-abs-behuizing-met-montageflens-donkergrijs-171x121x55mm.html), [TinyTronics Kradex 176×126×57 IP65](https://www.tinytronics.nl/en/tools-and-mounting/enclosures/universal/kradex-enclosure-176x126x57mm-ip65-grey-z74jh-tm-abs) |
@@ -41,12 +42,17 @@ One per measuring point. Electronics, sensors and enclosure come to about **€1
 
 ### Small parts shopping list
 
-The small parts are the hardest to find, so here they are as exact product pages. With **two orders** you have everything: one at **Reichelt** for the special parts (0.1 % shunt, zener) and one at **Otronic** for the common ones. Otronic sells resistors in bags of 10, so one order covers several nodes. Prices are a few cents to about €1.50 per item.
+The small parts are the hardest to find, so here they are as exact product pages. With **two orders** you have everything: one at **Reichelt** for the special parts (0.1 % shunt, zener, AO3401A) and one at **Otronic** for the common ones. Otronic sells resistors in bags of 10, so one order covers several nodes. Prices are a few cents to about €1.50 per item.
 
 | Status | Part | Qty per node | Exact product |
 | :--- | :--- | :---: | :--- |
 | [ ] | Shunt resistor 100 Ω **0.1 %**, 25 ppm | 1 | Reichelt: [Welwyn RC55Y-100RB](https://www.reichelt.com/de/en/shop/product/metal_film_resistor_100_ohm_axial_250_mw_0_1_-237001) |
 | [ ] | Zener diode **3.6 V**, 0.5 W, DO-35 (BZX79C3V6) | 1-2 | Reichelt: [BZX79C3V6](https://www.reichelt.com/de/en/zener-diode-0-5-w-3-6-v-zf-3-6-p23127.html) |
+| [ ] | P-MOSFET **AO3401A**, SOT-23 | 1 | Reichelt: [AO3401A](https://reichelt.com/de/en/mosfet-p-ch-30v-4a-sot-23-ao-3401a-p166486.html) |
+| [ ] | N-MOSFET 2N7002 (SOT-23) **or 2N7000** (TO-92, easier on perfboard; legs with the flat side facing you: **S - G - D**, check the datasheet) | 1 | TinyTronics: [2N7000](https://www.tinytronics.nl/en/switches/transistors-and-mosfets/mosfets-fets/2n7000-fet-60v-200ma) |
+| [ ] | SOT-23 to DIP adapter, for the AO3401A on perfboard | 1 | TinyTronics: [SOT-23 breakout boards](https://www.tinytronics.nl/en/tools-and-mounting/prototyping-supplies/breakout-boards) |
+| [ ] | Resistor 100 kΩ, 1/4 W | 2 | Otronic: [10× 100 kΩ](https://www.otronic.nl/en/10x-resistor-100k-ohm-1-4-watt-5.html) |
+| [ ] | Resistor 100 Ω, 1/4 W (MOSFET gate) | 1 | Otronic: [10× 100 Ω](https://www.otronic.nl/en/10x-resistor-100-ohm-1-4-watt-5.html) |
 | [ ] | Resistor 1 kΩ, 1/4 W (ADC input) | 1 | Otronic: [10× 1 kΩ](https://www.otronic.nl/nl/10x-weerstand-1k-ohm-1-4-watt-5.html) |
 | [ ] | Resistor 4.7 kΩ, 1/4 W (DS18B20 pull-up) | 1 | Otronic: [10× 4.7 kΩ](https://www.otronic.nl/en/10x-resistance-4k7-ohm-1-4-watt-5.html) |
 | [ ] | Ceramic capacitor 100 nF (ADC input) | 1 | Otronic: [100 nF 50 V ceramic](https://www.otronic.nl/en/ceramic-disc-capacitor-104-50v-01uf-100nf-10.html) |

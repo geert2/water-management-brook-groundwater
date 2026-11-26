@@ -34,7 +34,7 @@ What to expect: trustworthy **trends and events** (a storm raising the level and
 ## Key features
 * **Level against the staff gauge:** the gateway adds an editable *Sensor Height Above Gauge Zero* to the measured water above the sensor. If the probe moves, you change one number in Home Assistant; no reflashing.
 * **Flood and low-water flags:** *Level Above Sensor Range* (beyond 2 m) and *Sensor Dry*.
-* **Battery life:** sensors are only powered while measuring. Expect roughly **6-9 months** on 2 × 18650 in parallel at a 10-minute cycle; **measure it** (field guide, section 6). The solar kit of the full station (`../full/`) can be added for year-round operation.
+* **Battery life:** sensors are only powered while measuring, and the 18 V loop only for about 1 s per cycle. Expect roughly **9-15 months** (estimate) on 2 × 18650 in parallel at a 10-minute cycle; **measure it** (field guide, section 6). The solar kit of the full station (`../full/`) can be added for year-round operation.
 * **Low-battery behaviour:** below 3.4 V the node only reports its battery voltage and sleeps 2 h.
 * **Simple hardware:** two analog channels (level, EC), one 1-Wire probe, one I²C module.
 
@@ -45,7 +45,7 @@ What to expect: trustworthy **trends and events** (a storm raising the level and
 ```text
 brook/lite/
 ├── README.md                       # This file
-├── BOM.md                          # Shopping list (~€110-150 per node + mounting)
+├── BOM.md                          # Shopping list (~€111-151 per node + mounting)
 ├── LICENSE.txt                     # MIT
 ├── .gitignore                      # Excludes secrets.yaml and build caches
 ├── docs/
@@ -84,7 +84,7 @@ Shared with `groundwater/` and kept in [`../../shared/`](../../shared/): the Hel
 
 | Component | Pin / wire | Heltec V3 pin | Notes |
 | :--- | :--- | :--- | :--- |
-| **MT3608 boost input** | `VIN+` / `VIN-` | `Vext` / `GND` | Switched by `GPIO36` (`LOW` = ON). Tune output to **18.0 V**. 220-470 µF low-ESR capacitor across its input. |
+| **MT3608 boost input** | `VIN+` / `VIN-` | `BAT+` through the MOSFET switch / `GND` | Switched by `GPIO7` (HIGH = ON) through an AO3401A + 2N7002/2N7000 ([shared/docs/boost-switch.md](../../shared/docs/boost-switch.md)). Tune output to **18.0 V**. 220-470 µF low-ESR capacitor across its input. |
 | **TL-136 level probe** | Red (`V+`) / Blue (`Out`) | MT3608 `VOUT+` / shunt node | **100 Ω 0.1 % shunt** from `Out` to `GND`; shunt node through **1 kΩ** to `GPIO5`. |
 | **EC module** | `+` / `-` / `A` | `Vext` / `GND` / `GPIO6` | Module in the dry box, only the two-wire probe in the brook. |
 | **DS18B20 water temp** | Red / Black / Yellow | `Vext` / `GND` / `GPIO4` | **4.7 kΩ pull-up** between `Vext` and `GPIO4`. |

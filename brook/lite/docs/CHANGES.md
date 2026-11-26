@@ -1,5 +1,14 @@
 # Changes
 
+## Boost converter switch (26 November 2026)
+* The MT3608 now runs from the **battery** through its own MOSFET switch (AO3401A + 2N7002/2N7000) on `GPIO7`, as in `groundwater/`. The 18 V loop no longer loads the Heltec's 3.3 V regulator / `Vext`.
+* New measuring order: BME280, DS18B20 and EC with the loop **off** (no loop current in the water while the EC probe is excited), then boost on, `warmup` 1 s, level, boost off. The battery is read before the boost converter is on.
+* `warmup` is now the settling time after the boost switch (1000 ms, was 700 ms after boot). `ds18b20_wait` (900 ms) is replaced by `ds18b20_wait_rest` (default 0 ms; the DS18B20 converts during the warm-up).
+* The boost converter is on about 1 s per cycle instead of about 2-3 s: estimated 10-17 mAh per day at 10 minutes (was 17-25).
+* The switch output is shared: `shared/esphome/heltec-v3/boost-switch.yaml`; circuit, parts and how to solder the SOT-23 MOSFET on an adapter: `shared/docs/boost-switch.md`.
+* **Rewiring needed** if you already built a node: move the MT3608 input from `Vext` to the MOSFET output and wire `GPIO7`. BOM: +€1.
+* Checked with `esphome config` before and after: `groundwater/` renders identically (only the new `boost_pin` substitution); `brook/lite/` differs only in the new output and the script order.
+
 ## Shared parts moved to `shared/` (24 November 2026)
 * Board, LoRa radio, outputs, buses, battery sensor, deep sleep, the level and EC inputs, the gateway base and the openSenseMap upload now come from `shared/esphome/` (same as `groundwater/`).
 * Level and EC formulas: `shared/esphome/include/water_calc.h` (same results).
