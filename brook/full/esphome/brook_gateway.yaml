@@ -1,7 +1,7 @@
 # =============================================================================
 # De Meetbeek - GATEWAY
 # Board  : Heltec WiFi LoRa 32 V3 (ESP32-S3 + SX1262), powered from mains USB
-# Job    : receive raw LoRa packets from the water node, APPLY CALIBRATION,
+# Job    : receive encrypted LoRa packets from the water node, APPLY CALIBRATION,
 #          run simple quality checks, publish to Home Assistant (+ optional MQTT).
 #
 # ALL CALIBRATION CONSTANTS LIVE IN THE "substitutions" BLOCK BELOW.
@@ -10,8 +10,9 @@
 #
 # Sensors: SEN0244 (EC/TDS) and SEN0189 (turbidity) are both DFRobot Gravity analog sensors.
 #
-# Incoming payload (from brook_sensor_node.yaml):
-#   B1,seq,vbat,water_temp,v_loop,v_ec,v_turb,dist_m      (-999 = no reading)
+# Incoming payload (from brook_sensor_node.yaml): an ESPHome packet_transport frame,
+# encrypted with lora_encryption_key (secrets.yaml, same key as the node). Raw values
+# with broadcast IDs v, t, vl, ve, vt, d and the sequence number n (sent last).
 # =============================================================================
 
 substitutions:
@@ -141,18 +142,30 @@ sx126x:
   rf_switch: true
   tcxo_voltage: 1_8V
   tcxo_delay: 5ms
+  # Signal quality of the last packet heard on the frequency (packet_transport decrypts
+  # the frame separately). Packets from other devices on 869.525 MHz also update these.
   on_packet:
     then:
       - lambda: |-
-          std::string msg(x.begin(), x.end());
-          unsigned int seq = 0;
-          float vbat, wt, vloop, vec, vnt, dist;
-          if (sscanf(msg.c_str(), "B1,%u,%f,%f,%f,%f,%f,%f",
-                     &seq, &vbat, &wt, &vloop, &vec, &vnt, &dist) != 7) {
-            ESP_LOGW("brook", "Ignoring unknown packet (RSSI %.0f dBm)", rssi);
-            return;
-          }
+          id(rssi_dbm).publish_state(rssi);
+          id(snr_db).publish_state(snr);
 
+# A receiver needs the node's name and key. The node sends its states twice per cycle.
+packet_transport:
+  - platform: sx126x
+    id: lora_transport
+    providers:
+      - name: brook-water-node
+        encryption: !secret lora_encryption_key
+
+# Calibration, QC and publishing for one received reading. Runs after the sequence
+# number (the last value of the frame) has arrived.
+script:
+  - id: process_reading
+    mode: queued
+    then:
+      - lambda: |-
+          unsigned int seq = (unsigned int) id(rx_seq).state;
           // ---- duplicate / loss / reset bookkeeping --------------------------
           if (id(have_rx) && seq == id(last_seq)) {
             return;                                   // second copy of same reading
@@ -165,9 +178,9 @@ sx126x:
           id(have_rx) = true;
           id(last_rx_ms) = millis();
 
-          auto nz = [](float x) { return x <= -998.0f ? NAN : x; };
-          vbat = nz(vbat); wt = nz(wt); vloop = nz(vloop);
-          vec = nz(vec); vnt = nz(vnt); dist = nz(dist);
+          // Raw values of this frame (NAN = not read on the node)
+          float vbat = id(rx_vbat).state, wt = id(rx_water_temp).state, vloop = id(rx_v_loop).state;
+          float vec = id(rx_v_ec).state, vnt = id(rx_v_turb).state, dist = id(rx_dist).state;
 
           int flags = 0;
 
@@ -216,8 +229,6 @@ sx126x:
           id(turbidity_ntu).publish_state((flags & 4) ? NAN : ntu);
           id(turb_raw_v).publish_state(vs);
           id(battery_v).publish_state(vbat);
-          id(rssi_dbm).publish_state(rssi);
-          id(snr_db).publish_state(snr);
           id(qc_flags).publish_state(flags);
           id(packets_lost).publish_state(id(lost_total));
           id(node_resets).publish_state(id(reset_total));
@@ -226,6 +237,41 @@ sx126x:
 
 # --- Entities shown in Home Assistant ----------------------------------------
 sensor:
+  # Raw values from the node. remote_id must match broadcast_id in brook_sensor_node.yaml.
+  # Internal: Home Assistant gets the calibrated values and the raw voltages below.
+  - platform: packet_transport
+    provider: brook-water-node
+    id: rx_vbat
+    remote_id: v
+  - platform: packet_transport
+    provider: brook-water-node
+    id: rx_water_temp
+    remote_id: t
+  - platform: packet_transport
+    provider: brook-water-node
+    id: rx_v_loop
+    remote_id: vl
+  - platform: packet_transport
+    provider: brook-water-node
+    id: rx_v_ec
+    remote_id: ve
+  - platform: packet_transport
+    provider: brook-water-node
+    id: rx_v_turb
+    remote_id: vt
+  - platform: packet_transport
+    provider: brook-water-node
+    id: rx_dist
+    remote_id: d
+  - platform: packet_transport
+    provider: brook-water-node
+    id: rx_seq
+    remote_id: "n"
+    on_value:
+      then:
+        - delay: 1s        # let the other values of the same frame arrive first
+        - script.execute: process_reading
+
   - platform: template
     id: level_m
     name: "Water Level"

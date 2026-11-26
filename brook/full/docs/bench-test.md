@@ -4,23 +4,24 @@ Test everything on the desk, one step at a time, before building the enclosure. 
 fails, fix it before continuing.
 
 ## A. Software
-- [ ] `cp esphome/secrets.yaml.example esphome/secrets.yaml` and fill in your values.
+- [ ] `cp esphome/secrets.yaml.example esphome/secrets.yaml` and fill in your values (one `lora_encryption_key` for both the node and the gateway).
 - [ ] `esphome config esphome/brook_gateway.yaml` says *Configuration is valid* (same for the node and the air node).
 - [ ] Flash the **gateway** by USB (antenna attached!). In the log you see Wi-Fi connected.
 - [ ] The gateway appears in Home Assistant (Settings → Devices).
 
 ## B. Radio link (no sensors yet)
 - [ ] Flash the **node** by USB with the antenna attached. Set `sleep_time: 15s` for testing.
-- [ ] Node log shows `TX: B1,1,...` lines, with the counter increasing.
+- [ ] Node log shows `TX seq 1: ...` lines, with the counter increasing.
+- [ ] If the gateway log shows nothing while the RSSI in Home Assistant changes, the two `lora_encryption_key` values differ.
 - [ ] Gateway log shows `seq 1 level ... flags ...` lines.
 - [ ] Home Assistant shows **Node Online = on**, an RSSI value (stronger than about −100 dBm),
       and **Readings Lost = 0**.
 - [ ] Unplug the node's USB for a minute: **Node Online** switches off after 20 minutes
       (shorten `offline_after_ms` to test).
 
-## C. Sensors, one by one (values from the node log, `-999` = not connected)
+## C. Sensors, one by one (values from the node log, `nan` = not connected)
 - [ ] **Battery:** `vbat` matches a multimeter within about 0.1 V (the node reads it at rest, before the boosters start, so compare with the multimeter reading at rest).
-- [ ] **Low-battery mode:** on a bench supply, lower the battery voltage to 3.3 V. The log shows *Battery low ... sensors skipped*, the TX line has `-999` for every sensor, the boosters stay off (0 V on both rails), and the next wake-up is 15 minutes later. Raise the voltage again and the normal cycle returns.
+- [ ] **Low-battery mode:** on a bench supply, lower the battery voltage to 3.3 V. The log shows *Battery low ... sensors skipped*, the TX line has `nan` for every sensor, the boosters stay off (0 V on both rails), and the next wake-up is 15 minutes later. Raise the voltage again and the normal cycle returns.
 - [ ] **DS18B20:** water temperature is plausible (room temperature in air; warms in your hand).
 - [ ] **TL-136:** in air the loop voltage is about 0.48 V (4 mA × 120 Ω). Lifting the probe
       out of water returns it there. Under about 3.6 mA means a wiring fault.

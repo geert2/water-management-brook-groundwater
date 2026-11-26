@@ -8,7 +8,7 @@
 |---|-------|--------|
 | 1 | TL-136 supply at full scale | **Done** (PR #3): 120 Ω shunt, 12.6 V at the sensor at 20 mA with a 15 V booster, 12 V treated as the minimum. Still measure it on the bench. |
 | 2 | ADS1115 input protection | **Done** (PR #3): 4.7 kΩ series resistor and optional BAT54S clamp on `A0`; worst-case input current 2-3 mA. |
-| 3 | LoRa payload plain text, unauthenticated | **Open.** The full station still sends the `B1,...` line in plain text. Possible fix: switch to `packet_transport` with encryption, as `groundwater/` and `brook/lite/` do. |
+| 3 | LoRa payload plain text, unauthenticated | **Done** (encrypted `packet_transport`, as `groundwater/` and `brook/lite/`): the `B1,...` line is gone. Still a shared passphrase without authentication or replay protection, same as the other two stations. |
 | 4 | V3.2 battery-divider default | **Partly.** The node file says to try `"false"` if the battery reads about 0 V. Check the silkscreen revision before deployment. |
 | 5 | Vext load of the two boosters | **Open.** Still powered from Vext. `groundwater/` now has a tested-in-CI MOSFET switch on `GPIO7` (PR #4) that could be reused here. Measure the Vext current first. |
 | 6 | Packet counter in RTC memory | **Compiles** in both `brook/full/` and `groundwater/` (CI). Behaviour over deep sleep still to be checked on hardware. |
@@ -116,7 +116,7 @@ These were found while reading the repository on GitHub. They are separate from 
 | Shunt | 120 Ω (2.4 V at 20 mA) | 100 Ω | 100 Ω |
 | Boost converters | two MT3608 (about 15 V and 5 V), input from Vext | one MT3608 (18 V), input from Vext | one MT3608 (18 V), input from the battery through a MOSFET switch |
 | LoRa | 869.525 MHz, SF9, CR 4/6 | 869.525 MHz, SF9, CR 4/5 | 868.1 MHz, SF9, CR 4/5 |
-| Payload | own ASCII line `B1,...`, sent twice, plain text | `packet_transport`, one frame, encrypted | `packet_transport`, one frame, encrypted |
+| Payload | `packet_transport`, encrypted, sent twice (was the plain-text `B1,...` line) | `packet_transport`, one frame, encrypted | `packet_transport`, one frame, encrypted |
 | Calibration | in the gateway, node sends raw volts | in the node | in the gateway, node sends raw volts |
 | Quality control | QC flag bits, lost and reset counters | *Sensor Dry*, *Level Above Sensor Range*, low-battery guard | QC flag bits, lost and reset counters, low-battery guard |
 | Cloud | MQTT, sensor.community | openSenseMap | openSenseMap |
@@ -144,7 +144,7 @@ Not taken over: the duplicate transmission, the ultrasonic cross-check, the turb
 - [ ] Packet counter survives deep sleep and restarts only after a power loss.
 - [ ] Settling time of the TL-136 loop after the booster starts.
 - [ ] Supply voltage at the TL-136 terminals at 20 mA (see point 1).
-- [ ] Actual LoRa frame size and airtime for the `B1,...` line.
+- [ ] Actual LoRa frame size and airtime of the encrypted `packet_transport` frame.
 - [x] A real `esphome compile` (CI, all three projects, 24 November 2026).
 
 *Sources: the Meetbeek files listed above and `docs/REFERENCES.md` of the groundwater repository.*

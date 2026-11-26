@@ -11,8 +11,9 @@ When you are done, set `ec_calibrated: "1"` and `ntu_calibrated: "1"`.
 
 **How to read the raw values during calibration:** connect the node by USB and run
 `esphome logs brook_sensor_node.yaml`. Each wake-up prints a line such as
-`TX: B1,17,3.912,14.20,1.2013,0.8044,2.0310,0.498`. The fields are
-`B1, counter, battery V, water °C, loop V, EC sensor V, turbidity V (after the divider), distance m`.
+`TX seq 17: vbat 3.912 V, water 14.20 C, loop 1.2013 V, EC 0.8044 V, turb 2.0310 V, dist 0.498 m`
+(turbidity after the divider). `nan` means the sensor was not read.
+The gateway also shows the loop current and the raw EC and turbidity voltages in Home Assistant.
 For faster testing temporarily set `sleep_time: 15s`.
 
 ## 1. TL-136 level sensor (4–20 mA)
