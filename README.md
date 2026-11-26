@@ -6,7 +6,7 @@ Open-source, low-cost monitoring stations built by volunteers: **Heltec WiFi LoR
 | :-- | :-- | :-- | :-- |
 | **Groundwater** | [`groundwater/`](groundwater/) | water table depth (TL-136 0-5 m), groundwater temperature, EC, optional BME280; hourly; openSenseMap | validates and compiles, not yet field-tested |
 | **Brook lite** | [`brook/lite/`](brook/lite/) | water level on the staff gauge (TL-136 0-2 m), water temperature, EC, air temperature, humidity and pressure; every 10 min; openSenseMap | validates and compiles, not yet field-tested |
-| **Brook full** ("De Meetbeek") | [`brook/full/`](brook/full/) | level (TL-136 + ultrasonic), water temperature, EC, turbidity, solar power, separate PM2.5/PM10 air node; MQTT | validates; open PRs pending |
+| **Brook full** ("De Meetbeek") | [`brook/full/`](brook/full/) | level (TL-136 + ultrasonic), water temperature, EC, turbidity, solar power, separate PM2.5/PM10 air node; MQTT | validates and compiles, not yet field-tested |
 
 Start with the README in the project folder: each one has its own BOM, wiring notes, field guide, ESPHome configs and Home Assistant dashboard. What `groundwater/` and `brook/lite/` have in common (Heltec V3 board and radio setup, gateway base, openSenseMap upload, sensor inputs, formulas, and the docs on the board, cable splicing, EC calibration and references) lives once in [`shared/`](shared/).
 
