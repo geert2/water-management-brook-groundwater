@@ -1,6 +1,7 @@
 # Changes after the technical review
 
 ## Boost switch shared with brook/lite (26 November 2026)
+* **Through-hole switch:** the switch is now a **BC327 PNP + BC337 NPN** transistor pair (10 kΩ, 470 Ω, 4.7 kΩ, 100 kΩ), all normal-legged parts from Otronic. The SMD AO3401A needed hard-to-get adapters and the through-hole NDP6020P is discontinued. The old AO3401A + 2N7000 version still works; firmware unchanged.
 * The `GPIO7` output now comes from `shared/esphome/heltec-v3/boost-switch.yaml`; the switch diagram moved to `shared/docs/img/`, with a new guide `shared/docs/boost-switch.md` (parts, 2N7000 alternative, soldering the SOT-23 MOSFET on an adapter, bench test). Firmware unchanged (`esphome config` renders identically).
 
 Validated with ESPHome 2026.10.2 (`esphome config`, zero warnings) for both nodes and the gateway. The C++ was **not** compiled here and nothing has been tested on hardware.

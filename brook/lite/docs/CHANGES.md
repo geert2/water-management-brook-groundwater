@@ -1,6 +1,7 @@
 # Changes
 
 ## Boost converter switch (26 November 2026)
+* **Through-hole switch:** the switch is now a **BC327 PNP + BC337 NPN** transistor pair (10 kΩ, 470 Ω, 4.7 kΩ, 100 kΩ), all normal-legged parts from Otronic. The SMD AO3401A needed hard-to-get adapters and the through-hole NDP6020P is discontinued. The old AO3401A + 2N7000 version still works; firmware unchanged.
 * The MT3608 now runs from the **battery** through its own MOSFET switch (AO3401A + 2N7002/2N7000) on `GPIO7`, as in `groundwater/`. The 18 V loop no longer loads the Heltec's 3.3 V regulator / `Vext`.
 * New measuring order: BME280, DS18B20 and EC with the loop **off** (no loop current in the water while the EC probe is excited), then boost on, `warmup` 1 s, level, boost off. The battery is read before the boost converter is on.
 * `warmup` is now the settling time after the boost switch (1000 ms, was 700 ms after boot). `ds18b20_wait` (900 ms) is replaced by `ds18b20_wait_rest` (default 0 ms; the DS18B20 converts during the warm-up).

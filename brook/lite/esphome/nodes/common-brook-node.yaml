@@ -6,7 +6,7 @@
 #   * air temperature, relative humidity and pressure (BME280, in a radiation shield on the bank)
 #   * battery voltage (diagnostic)
 # The gateway turns "water above the sensor" into the water level on the staff gauge.
-# The 18 V boost converter for the TL-136 runs from the battery through its own MOSFET switch (GPIO7),
+# The 18 V boost converter for the TL-136 runs from the battery through its own transistor switch (GPIO7),
 # not from Vext; it is on only while the level is read (docs/wiring.md section 2).
 # Deep sleep: no network or OTA while asleep [R7]; DS18B20 conversion time [R8][R23].
 # Per-node values are overridden in brook-lite-node-N.yaml via `substitutions:`.

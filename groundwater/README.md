@@ -12,7 +12,7 @@ Built around the **Heltec WiFi LoRa 32 V3 (ESP32-S3 + SX1262)**, battery-powered
 * **Water Table Depth (0-4 m):** industrial submersible hydrostatic pressure transmitter (TL-136, 0-5 m, 4-20 mA, vented cable).
 * **Water Quality & Recharge:** waterproof DS18B20 temperature probe and an analog EC/TDS sensor with automatic 25 °C temperature compensation.
 * **Enclosure/weather context (BME280, optional):** air pressure, plus temperature and humidity inside the box, which tells you when the desiccant is used up.
-* **Long battery life:** the Heltec `Vext` rail (`GPIO36`) and a MOSFET switch for the boost converter (`GPIO7`) cut power to all sensors between readings. Expect roughly **1-2 years** from one 3000 mAh+ 18650, depending on your board's real sleep current. **Measure it** (see Field Guide, section 6); the estimate is not a guarantee.
+* **Long battery life:** the Heltec `Vext` rail (`GPIO36`) and a transistor switch for the boost converter (`GPIO7`) cut power to all sensors between readings. Expect roughly **1-2 years** from one 3000 mAh+ 18650, depending on your board's real sleep current. **Measure it** (see Field Guide, section 6); the estimate is not a guarantee.
 * **Low-battery behaviour:** below 3.4 V a node only reports its battery voltage and sleeps 6 h.
 * **Dual cloud & local output:** one farmhouse gateway receives packets from several wells and pushes them to **openSenseMap** and **Home Assistant**.
 * **Gateway health and data quality:** per-well *Node Online*, *Water Below Sensor*, *QC Flags*, *Readings Lost* and *Node Resets* entities, plus an editable *Sensor Depth Below Ground* (no reflashing when you re-lower a probe). Raw voltages stay visible as diagnostic entities.
@@ -70,7 +70,7 @@ More detail: [depth channel (ESP32 ADC)](docs/img/depth-frontend-esp.svg), [dept
 
 | Component | Pin / Wire | Heltec V3 Pin | Notes |
 | :--- | :--- | :--- | :--- |
-| **MT3608 Boost Input** | `VIN+` / `VIN-` | `BAT+` through the MOSFET switch / `GND` | Switched by `GPIO7` (HIGH = ON) through a P-MOSFET (NDP6020P or AO3401A) + 2N7000 stage (`docs/wiring.md`, section 2). Tune output to **18.0 V**. Add a 220-470 µF low-ESR capacitor across its input. |
+| **MT3608 Boost Input** | `VIN+` / `VIN-` | `BAT+` through the transistor switch / `GND` | Switched by `GPIO7` (HIGH = ON) through a BC327 PNP + BC337 NPN transistor switch stage (`docs/wiring.md`, section 2). Tune output to **18.0 V**. Add a 220-470 µF low-ESR capacitor across its input. |
 | **TL-136 Depth Probe** | Red (`V+`) / Blue (`Out`) | MT3608 `VOUT+` / shunt node | **100 Ω 0.1 % shunt** from `Out` to `GND`; the shunt node goes through **1 kΩ** to `GPIO5` (see `docs/wiring.md`). |
 | **EC / TDS Module** | `VCC` / `GND` / `AOUT` | `Vext` / `GND` / `GPIO6` | The *probe* has two electrode wires; only the module has three pins. |
 | **BME280 (optional)** | `VIN` / `GND` / `SDA` / `SCL` | `Vext` / `GND` / `GPIO41` / `GPIO42` | 3.3 V module, I²C address `0x76` (or `0x77`; set `bme280_address`). Mount it inside the enclosure. |

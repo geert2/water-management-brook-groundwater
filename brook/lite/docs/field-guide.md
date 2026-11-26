@@ -19,7 +19,7 @@ Follow the **Marine Triple-Seal Method** in **[shared/docs/cable-splicing.md](..
 Complete these steps indoors before heading out to the brook.
 
 - [ ] **Boost converter:** with a multimeter, verify the MT3608 output reads **18.0 V DC** while the boost switch is on (about 1 s per cycle, just after the LED flash; use a long `warmup` temporarily or a bench supply).
-- [ ] **Boost MOSFET switch:** NDP6020P (or AO3401A) + 2N7000 wired as in `shared/docs/boost-switch.md`; with the node asleep the MT3608 `IN+` reads **0 V**.
+- [ ] **Boost switch:** BC327 (PNP) + BC337 (NPN) wired as in `shared/docs/boost-switch.md`; with the node asleep the MT3608 `IN+` reads **0 V**.
 - [ ] **Shunt and protection:** confirm the **100 Ω shunt**, the **1 kΩ series resistor**, the **3.6 V zener** and the **100 nF capacitor** are wired as in `docs/wiring.md`. Measure the actual shunt value and set `shunt_ohm` if needed.
 - [ ] **Boost input capacitor:** 220-470 µF fitted across the MT3608 input.
 - [ ] **LoRa antenna attached:** **never power the Heltec V3 without the 868 MHz antenna screwed on**, or you risk damaging the SX1262 amplifier.

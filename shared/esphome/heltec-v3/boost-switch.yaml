@@ -1,9 +1,9 @@
 # Power switch for the 18 V boost converter (MT3608) of the TL-136 4-20 mA loop.
-# Used by groundwater/ and brook/lite/. Hardware: AO3401 P-MOSFET (high side, BAT+ -> MT3608 IN+)
-# driven by a 2N7002 / 2N7000 N-MOSFET; see shared/docs/boost-switch.md.
+# Used by groundwater/ and brook/lite/. Hardware: BC327 PNP transistor (high side, BAT+ -> MT3608 IN+)
+# driven by a BC337 NPN transistor (or the older AO3401A + 2N7000 MOSFET version); see shared/docs/boost-switch.md.
 #
-# GPIO7 HIGH -> N-MOSFET on -> P-MOSFET gate pulled low -> BAT+ reaches the MT3608 input.
-# A 100 kohm pull-down on the N-MOSFET gate keeps the boost converter OFF during deep sleep and reset.
+# GPIO7 HIGH -> BC337 on -> BC327 base pulled low -> BAT+ reaches the MT3608 input.
+# A 100 kohm pull-down on the BC337 base keeps the boost converter OFF during deep sleep and reset.
 #
 # The project script turns `boost_power` on only after the battery has been read (so the battery is
 # measured without the loop load), waits `warmup`, reads the level channel and turns it off again.
