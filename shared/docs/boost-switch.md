@@ -1,4 +1,4 @@
-# Boost converter switch (AO3401A + 2N7002 / 2N7000)
+# Boost converter switch (P-MOSFET + 2N7000)
 
 Used by `groundwater/` and `brook/lite/`. Firmware: [`shared/esphome/heltec-v3/boost-switch.yaml`](../esphome/heltec-v3/boost-switch.yaml) (`GPIO7`, output `boost_power`).
 
@@ -13,27 +13,41 @@ The TL-136 needs 18 V, made by an MT3608 boost converter. The 4-20 mA loop is th
 
 ## Circuit
 
-* `BAT+` to the AO3401A **source** (S).
-* AO3401A **drain** (D) to the MT3608 `IN+`. The 220-470 µF capacitor goes across the MT3608 input (`IN+` to `GND`).
-* AO3401A **gate** (G) to `BAT+` through **100 kΩ**, and to the **drain** of the N-MOSFET.
+* `BAT+` to the P-MOSFET **source** (S).
+* P-MOSFET **drain** (D) to the MT3608 `IN+`. The 220-470 µF capacitor goes across the MT3608 input (`IN+` to `GND`).
+* P-MOSFET **gate** (G) to `BAT+` through **100 kΩ**, and to the **drain** of the N-MOSFET.
 * N-MOSFET **source** to `GND`; its **gate** to `GPIO7` through **100 Ω**, with a **100 kΩ** pull-down from the gate to `GND`.
 
-`GPIO7` HIGH: the N-MOSFET pulls the AO3401A gate low, and the battery reaches the boost converter. During deep sleep and reset the pin floats; the pull-down keeps everything off.
+`GPIO7` HIGH: the N-MOSFET pulls the P-MOSFET gate low, and the battery reaches the boost converter. During deep sleep and reset the pin floats; the pull-down keeps everything off.
 
-### Which N-MOSFET
-* **2N7002** (SOT-23, SMD): needs a second adapter like the AO3401A.
-* **2N7000** (TO-92, normal legs, easier on perfboard): fine here, it only pulls the 100 kΩ gate resistor low. Its legs are in a **different order**: with the flat side facing you and the legs pointing down, usually **S - G - D** (left to right). Check the datasheet of the part you bought.
+## Which parts
 
-### The AO3401A must turn fully on at a low battery
-At 3.0 V the gate sees only about -3 V. The AO3401A is specified for 2.5 V gate drive, so it is fully on; a random P-MOSFET may not be. If you substitute, pick one with `Rds(on)` specified at `Vgs = -2.5 V`.
+### P-MOSFET: two options
+| Option | Part | Soldering | Where |
+| :--- | :--- | :--- | :--- |
+| **A, easiest** | **NDP6020P**, TO-220 | normal legs, straight into the perfboard | [TinyTronics](https://www.tinytronics.nl/en/components/ndp6020p-power-p-mosfet-20v-24a) |
+| B | AO3401A, SOT-23 | tiny SMD part, needs an adapter board (below) | [Reichelt](https://reichelt.com/de/en/mosfet-p-ch-30v-4a-sot-23-ao-3401a-p166486.html) + [SOT-23-3 adapter](https://www.reichelt.com/de/en/shop/product/sot_23-3_adapter_0_95-mm_pitch_rm_2_54_mm-167706) |
 
-## Soldering the SOT-23 parts on an adapter
+Both are "logic level": they turn fully on with only about -2.5 to -3 V on the gate, which is all a nearly empty cell (3.0 V) gives. A common P-MOSFET such as the IRF9540, IRF5305 or IRF4905 does **not** (it needs -4 to -10 V) and would stay half on.
+
+**NDP6020P legs** (TO-220, text facing you, legs pointing down): **G - D - S** from left to right; the metal tab is also D, so keep it from touching anything else. Check the datasheet of the part you bought. It is much bigger than needed (24 A), but that does no harm; it needs no heatsink at 0.1 A.
+
+### N-MOSFET: 2N7000
+* **2N7000** (TO-92, normal legs): fine here, it only pulls the 100 kΩ gate resistor low. With the flat side facing you and the legs pointing down, usually **S - G - D** (left to right). Check the datasheet of the part you bought.
+* 2N7002 is the same part in SOT-23 (SMD); only use it if you already have an adapter.
+
+### The P-MOSFET must turn fully on at a low battery
+At 3.0 V the gate sees only about -3 V. If you substitute another P-MOSFET, pick one with `Rds(on)` specified at `Vgs = -2.5 V`.
+
+## Option B: soldering the AO3401A (SOT-23) on an adapter
 
 ![SOT-23 adapter](img/sot23-adapter.svg)
 
-The AO3401A only exists as a tiny SMD part (SOT-23, about 3 × 1.5 mm). An adapter board turns it into a part with normal 2.54 mm pins.
+Skip this section if you use the NDP6020P. The AO3401A only exists as a tiny SMD part (SOT-23, about 3 × 1.5 mm). An adapter board turns it into a part with normal 2.54 mm pins.
 
-* Many cheap adapters are **double-sided**: one side has a 10-pin footprint (`SOP10` / `MSOP10`, `0.5MM`), the other side a 6-pad `SOT23-6` footprint. The SOT-23 goes on the **SOT23-6 side**.
+* **Simplest adapter:** a board with exactly **3 pads** for SOT-23-3, e.g. the [Roth SOT-23-3 adapter at Reichelt](https://www.reichelt.com/de/en/shop/product/sot_23-3_adapter_0_95-mm_pitch_rm_2_54_mm-167706): leg 1 on pad 1, leg 2 on pad 2, leg 3 on pad 3.
+
+* Many cheap adapters are **double-sided**: one side has a 10-pin footprint (`SOP10` / `MSOP10`, `0.5MM`), the other side a 6-pad footprint marked `SOT23`, `SOT23-6` or `0.95MM`. The SOT-23 goes on **that** side.
 * A SOT-23 has **3 legs**: two on one side (leg 1 = **G**, leg 2 = **S**), one alone on the other side (leg 3 = **D**). The AO3401A and 2N7002 both use this order.
 * On a SOT23-6 footprint use **pad 1** (G), **pad 3** (S) and **pad 5** (D, the middle pad of the other row). Pads 2, 4 and 6 stay empty.
 * Which hole each pad goes to differs between boards. **Follow the copper track or use a multimeter in continuity mode**, and write G / S / D next to the holes before you build.

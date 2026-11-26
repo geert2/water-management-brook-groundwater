@@ -40,12 +40,12 @@ The full station (`../full/`) uses 160 Ω with an ADS1115. With the ESP32 ADC, 1
    |                          |                               |              |
    |                       BME280                        EC module      DS18B20 (+4.7 k pull-up to GPIO4)
    |
-   +--> AO3401A P-MOSFET switch (gate driven by 2N7002 / 2N7000, GPIO7 HIGH = ON)
+   +--> P-MOSFET switch, NDP6020P or AO3401A (gate driven by 2N7000, GPIO7 HIGH = ON)
             |
         [220-470 uF] + MT3608 IN --> MT3608 OUT = 18.0 V --> TL-136 V+
 ```
 
-* **Boost switch:** the MT3608 runs from the **battery** through its own MOSFET switch on `GPIO7`, not from `Vext`. The 18 V loop (about 115 mA from the cell) then does not load the Heltec's 3.3 V regulator, the battery is read without the loop load, and the loop is **off while the EC probe is read**. Circuit, parts, soldering the SOT-23 MOSFET on an adapter, and a bench test: **[shared/docs/boost-switch.md](../../../shared/docs/boost-switch.md)**.
+* **Boost switch:** the MT3608 runs from the **battery** through its own MOSFET switch on `GPIO7`, not from `Vext`. The 18 V loop (about 115 mA from the cell) then does not load the Heltec's 3.3 V regulator, the battery is read without the loop load, and the loop is **off while the EC probe is read**. Circuit, parts (through-hole NDP6020P or SMD AO3401A), pinouts and a bench test: **[shared/docs/boost-switch.md](../../../shared/docs/boost-switch.md)**.
 * **Measuring order per cycle:** BME280, DS18B20 (starts converting) and EC with the loop off; then the boost converter on, `warmup` (1 s), level reading, boost converter off.
 * **Battery:** two protected 18650 cells **in parallel** (never in series; the Heltec charges one cell). The 10-minute cycle uses roughly 10-17 mAh per day (estimate, field guide section 6), so 2 × 3000 mAh lasts about 9-15 months. For a 5-minute cycle or year-round operation without battery swaps, add the small solar kit of the full station (`../full/`) (panel + CN3791 MPPT charger).
 * Li-ion must **not be charged below 0 °C**. With solar, use a charger with a temperature cut-off or accept that winter charging stops on frosty days.
@@ -60,7 +60,7 @@ The full station (`../full/`) uses 160 Ω with an ADS1115. With the ESP32 ADC, 1
 | Function | Heltec V3 pin | Notes |
 | :--- | :--- | :--- |
 | Vext enable | `GPIO36` | LOW = sensor rail ON |
-| Boost switch | `GPIO7` | HIGH = MT3608 input powered, via 2N7002 / 2N7000 + AO3401A |
+| Boost switch | `GPIO7` | HIGH = MT3608 input powered, via 2N7000 + NDP6020P (or AO3401A) |
 | Level signal | `GPIO5` (ADC1) | via 1 kΩ, zener, 100 nF |
 | EC signal | `GPIO6` (ADC1) | analog output of the DFRobot EC/TDS module (0-2.3 V) |
 | DS18B20 data | `GPIO4` | 4.7 kΩ to `Vext` |

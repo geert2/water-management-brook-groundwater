@@ -70,7 +70,7 @@ More detail: [depth channel (ESP32 ADC)](docs/img/depth-frontend-esp.svg), [dept
 
 | Component | Pin / Wire | Heltec V3 Pin | Notes |
 | :--- | :--- | :--- | :--- |
-| **MT3608 Boost Input** | `VIN+` / `VIN-` | `BAT+` through the MOSFET switch / `GND` | Switched by `GPIO7` (HIGH = ON) through an AO3401 + 2N7002 stage (`docs/wiring.md`, section 2). Tune output to **18.0 V**. Add a 220-470 µF low-ESR capacitor across its input. |
+| **MT3608 Boost Input** | `VIN+` / `VIN-` | `BAT+` through the MOSFET switch / `GND` | Switched by `GPIO7` (HIGH = ON) through a P-MOSFET (NDP6020P or AO3401A) + 2N7000 stage (`docs/wiring.md`, section 2). Tune output to **18.0 V**. Add a 220-470 µF low-ESR capacitor across its input. |
 | **TL-136 Depth Probe** | Red (`V+`) / Blue (`Out`) | MT3608 `VOUT+` / shunt node | **100 Ω 0.1 % shunt** from `Out` to `GND`; the shunt node goes through **1 kΩ** to `GPIO5` (see `docs/wiring.md`). |
 | **EC / TDS Module** | `VCC` / `GND` / `AOUT` | `Vext` / `GND` / `GPIO6` | The *probe* has two electrode wires; only the module has three pins. |
 | **BME280 (optional)** | `VIN` / `GND` / `SDA` / `SCL` | `Vext` / `GND` / `GPIO41` / `GPIO42` | 3.3 V module, I²C address `0x76` (or `0x77`; set `bme280_address`). Mount it inside the enclosure. |
