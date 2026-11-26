@@ -44,7 +44,9 @@ It works if your water column stays below about 4.8 m (the ESP32-S3 ADC saturate
 
 ## 2. Power
 
-![Boost converter power switch](img/boost-switch.svg)
+![Boost converter power switch](../../shared/docs/img/boost-switch.svg)
+
+Parts, soldering the SOT-23 MOSFET on an adapter and a bench test: **[shared/docs/boost-switch.md](../../shared/docs/boost-switch.md)**.
 
 ```text
 18650 --> Heltec battery connector --> 3.3 V regulator --> Vext switch (GPIO36 LOW = ON)
@@ -53,14 +55,14 @@ It works if your water column stays below about 4.8 m (the ESP32-S3 ADC saturate
    |                                |                         |           |
    |                             EC module    DS18B20 (+4.7 k pull-up)  BME280 / ADS1115
    |
-   +--> AO3401 P-MOSFET switch (gate driven by 2N7002, GPIO7 HIGH = ON)
+   +--> P-MOSFET switch, NDP6020P or AO3401A (gate driven by 2N7000, GPIO7 HIGH = ON)
             |
         [220-470 uF] + MT3608 IN --> MT3608 OUT = 18.0 V --> TL-136 V+
 ```
 
 * **Why a separate switch:** the MT3608 now runs from the **battery** through its own MOSFET, not from `Vext`. The loop is the biggest load: 20 mA at 18 V is about 0.36 W, which at roughly 85 % boost efficiency (my assumption) is about 130 mA from 3.3 V or about 115 mA from a 3.7 V cell. Feeding it from `Vext` puts that current through the board's 3.3 V regulator and Vext switch, whose current rating I could not confirm; feeding it from the battery avoids that, and the loop can be switched without the probes. Idea and circuit taken from the Meetbeek set (P-MOSFET + N-MOSFET stage). The old design ran the MT3608 input from `Vext`; if you built that, move the MT3608 input to the MOSFET output and wire `GPIO7`.
-* **Switch circuit:** `BAT+` to the AO3401 **source**; AO3401 **drain** to the MT3608 `IN+`; AO3401 **gate** to `BAT+` through 100 kΩ, and to the 2N7002 **drain**; 2N7002 **source** to `GND`; 2N7002 **gate** to `GPIO7` through 100 Ω, with a 100 kΩ pull-down to `GND`. `GPIO7` HIGH turns the boost converter on; during deep sleep the pull-down keeps it off.
-* **The MOSFET is a part to verify:** the AO3401 must have a gate threshold below about 1.5 V at `Vgs = -3 V` so it is fully on at a 3.0 V battery. Check its datasheet for `Rds(on)` at `Vgs = -2.5 V` (it is specified for 2.5 V operation). Test the switched-off state with a multimeter: the MT3608 `IN+` must be 0 V while the node sleeps.
+* **Switch circuit:** `BAT+` to the P-MOSFET **source**; P-MOSFET **drain** to the MT3608 `IN+`; P-MOSFET **gate** to `BAT+` through 100 kΩ, and to the 2N7000 **drain**; 2N7000 **source** to `GND`; 2N7000 **gate** to `GPIO7` through 100 Ω, with a 100 kΩ pull-down to `GND`. `GPIO7` HIGH turns the boost converter on; during deep sleep the pull-down keeps it off.
+* **The P-MOSFET is a part to verify:** it must turn fully on with only about -3 V on the gate (a nearly empty cell). The NDP6020P (through-hole, TO-220) and the AO3401A (SMD) both do; common types such as the IRF9540 or IRF4905 do not. Test the switched-off state with a multimeter: the MT3608 `IN+` must be 0 V while the node sleeps. Parts and pinouts: [shared/docs/boost-switch.md](../../shared/docs/boost-switch.md).
 * The 220-470 µF capacitor at the boost input is a precaution against the start-up current spike browning out the ESP32. The MT3608 has internal soft start [R20], so this is a cheap safeguard rather than a fix for a known fault.
 * The TL-136 is listed with a 12 to 32 V supply [R21]; at 18 V a 160 Ω shunt (3.2 V at 20 mA) still leaves about 14.8 V. Check the label of your unit.
 * Set the MT3608 to 18.0 V **before** connecting the TL-136, and re-check after transport (the trimmer drifts).
@@ -72,7 +74,7 @@ It works if your water column stays below about 4.8 m (the ESP32-S3 ADC saturate
 | Function | Heltec V3 pin | Notes |
 | :--- | :--- | :--- |
 | Vext enable | `GPIO36` | LOW = sensor rail ON |
-| Boost switch | `GPIO7` | HIGH = MT3608 input powered, via 2N7002 + AO3401 |
+| Boost switch | `GPIO7` | HIGH = MT3608 input powered, via 2N7000 + NDP6020P (or AO3401A) |
 | Depth signal | `GPIO5` (ADC1) | via 1 kΩ, zener, 100 nF |
 | EC signal | `GPIO6` (ADC1) | analog module output |
 | DS18B20 data | `GPIO4` | 4.7 kΩ to `Vext` |

@@ -12,6 +12,7 @@
 packages:
   node_base: !include ../../../shared/esphome/heltec-v3/node-base.yaml
   ec_adc: !include ../../../shared/esphome/sensors/ec-sen0244-adc.yaml
+  boost_switch: !include ../../../shared/esphome/heltec-v3/boost-switch.yaml
 
 substitutions:
   # --- timing ---
@@ -79,12 +80,7 @@ packet_transport:
       - id: tx_seq
         broadcast_id: "n"
 
-output:
-  # Boost converter (MT3608) power switch: GPIO7 HIGH -> N-MOSFET on -> P-MOSFET on -> BAT+ reaches
-  # the MT3608 input. A 100 k pull-down keeps it OFF during deep sleep. See docs/wiring.md section 2.
-  - platform: gpio
-    pin: GPIO7
-    id: boost_power
+# Boost converter (MT3608) power switch `boost_power` on GPIO7: shared/esphome/heltec-v3/boost-switch.yaml
 
 sensor:
   # 0. BME280 in the enclosure (optional; shows 'unavailable' if not fitted).

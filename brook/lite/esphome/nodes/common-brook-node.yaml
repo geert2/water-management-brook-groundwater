@@ -6,6 +6,8 @@
 #   * air temperature, relative humidity and pressure (BME280, in a radiation shield on the bank)
 #   * battery voltage (diagnostic)
 # The gateway turns "water above the sensor" into the water level on the staff gauge.
+# The 18 V boost converter for the TL-136 runs from the battery through its own MOSFET switch (GPIO7),
+# not from Vext; it is on only while the level is read (docs/wiring.md section 2).
 # Deep sleep: no network or OTA while asleep [R7]; DS18B20 conversion time [R8][R23].
 # Per-node values are overridden in brook-lite-node-N.yaml via `substitutions:`.
 #
@@ -21,6 +23,7 @@ packages:
   node_base: !include ../../../../shared/esphome/heltec-v3/node-base.yaml
   level_adc: !include ../../../../shared/esphome/sensors/tl136-adc-esp.yaml
   ec_adc: !include ../../../../shared/esphome/sensors/ec-sen0244-adc.yaml
+  boost_switch: !include ../../../../shared/esphome/heltec-v3/boost-switch.yaml
 
 substitutions:
   # --- timing ---
@@ -28,8 +31,9 @@ substitutions:
                                  # brooks react fast; 10 min is a good balance with battery life (docs/field-guide.md section 6)
   low_battery_v: "3.4"           # below this, skip measuring and sleep longer (ignored if the reading is < 2 V)
   low_battery_sleep_minutes: "120"
-  warmup: 700ms                  # extra settling time after boot (Vext is already on since early boot)
-  ds18b20_wait: 900ms            # DS18B20 12-bit conversion takes up to 750 ms [R23]
+  warmup: 1000ms                 # TL-136 settling time after the boost converter (GPIO7) is switched on
+  ds18b20_wait_rest: 0ms         # extra wait for the DS18B20 (up to 750 ms [R23]) after the level reading;
+                                 # 0 is fine while warmup >= 800ms, otherwise set it to 800ms - warmup
   tx_wait: 1500ms                # airtime + margin before the radio sleeps [R22]
   # --- level channel (TL-136, 4-20 mA across a shunt resistor) ---
   range_m: "2.0"                 # full-scale range of the TL-136 (0-2 m: a brook changes at most ~2 m)
@@ -164,6 +168,7 @@ script:
               float v = id(battery_voltage_v).state;
               return !isnan(v) && v > 2.0f && v < ${low_battery_v};
           then:
+            - output.turn_off: boost_power
             - output.turn_off: vext_power
             - component.update: lora_transport
             - delay: ${tx_wait}
@@ -173,13 +178,18 @@ script:
                 sleep_duration: !lambda 'return (uint32_t) ${low_battery_sleep_minutes} * 60000UL;'
 
       # Normal cycle
+      # a) Air, water temperature and EC with the 18 V loop OFF: no loop current in the water
+      #    while the EC probe is excited, and less energy. The DS18B20 converts in the background.
       - output.turn_on: vext_power         # already on; harmless
-      - delay: ${warmup}
       - component.update: bme280_hub
-      - component.update: water_temp_c
-      - component.update: depth_voltage
+      - component.update: water_temp_c     # starts the conversion (up to 750 ms)
       - component.update: ec_voltage
-      - delay: ${ds18b20_wait}             # DS18B20 / BME280 results arrive meanwhile
+      # b) Level: boost on only now, so the battery was read without the loop load
+      - output.turn_on: boost_power
+      - delay: ${warmup}                   # TL-136 settles; the DS18B20 result arrives meanwhile
+      - component.update: depth_voltage
+      - output.turn_off: boost_power
+      - delay: ${ds18b20_wait_rest}        # rest of the DS18B20 conversion if warmup is shorter than 750 ms
       - component.update: water_column_m   # needs depth_voltage
       - component.update: ec_compensated_us # needs the water temperature
       - output.turn_off: vext_power

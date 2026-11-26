@@ -16,7 +16,7 @@
 | Status LED | `GPIO35` | flashes once at every wake-up |
 | LoRa SX1262 | `GPIO8/9/10/11/12/13/14` | onboard; `tcxo_voltage: 1_8V`, `rf_switch: true` [R10] |
 
-A project can add its own pins (for example `GPIO7` for the boost switch in `groundwater/`).
+A project can add its own pins (for example `GPIO7` for the boost switch in `groundwater/` and `brook/lite/`, see [boost-switch.md](boost-switch.md)).
 
 ## Board revision check (do this once per board)
 The polarity of two pins differs between Heltec V3 revisions, and the firmware has two settings for it (defaults in `shared/esphome/heltec-v3/node-base.yaml`, override them in the node file):
@@ -38,4 +38,4 @@ Check the battery reading against a multimeter once. If it is off, adjust `vbat_
 * **Re-flashing a node:** nodes sleep right after each reading and have no Wi-Fi, so updates need USB. Hold **BOOT** while pressing **RST** to enter the bootloader.
 * **Deep-sleep current:** expect tens to a few hundred µA for the whole board; Heltec quotes under 10 µA for a related board [R15], treat that as a best case. Measure it with a µA-capable meter in series with the battery: above about 100 µA, battery life is limited by the sleep current rather than by the measurements.
 * **Charging:** the board charges one Li-ion cell from USB and has no deep-discharge cut-off, so use **protected** 18650 cells, and **never charge below 0 °C**.
-* **Vext load:** the 3.3 V regulator also feeds the ESP32 and the radio. Keep large loads (an 18 V boost converter for the TL-136 loop) on their own switch where possible, as `groundwater/` does on `GPIO7`.
+* **Vext load:** the 3.3 V regulator also feeds the ESP32 and the radio. Keep large loads (an 18 V boost converter for the TL-136 loop) on their own switch where possible, as `groundwater/` and `brook/lite/` do on `GPIO7` ([boost-switch.md](boost-switch.md)).

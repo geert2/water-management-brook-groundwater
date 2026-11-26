@@ -18,7 +18,8 @@ Follow the **Marine Triple-Seal Method** in **[shared/docs/cable-splicing.md](..
 ## 2. Pre-Deployment Bench Checklist
 Complete these steps indoors before heading out to the brook.
 
-- [ ] **Boost converter:** with a multimeter, verify the MT3608 output reads **18.0 V DC** while `Vext` is active (the node's LED flashes at wake-up; the rail is on for about 2 s per cycle, so use a long `warmup` temporarily or a bench supply).
+- [ ] **Boost converter:** with a multimeter, verify the MT3608 output reads **18.0 V DC** while the boost switch is on (about 1 s per cycle, just after the LED flash; use a long `warmup` temporarily or a bench supply).
+- [ ] **Boost MOSFET switch:** NDP6020P (or AO3401A) + 2N7000 wired as in `shared/docs/boost-switch.md`; with the node asleep the MT3608 `IN+` reads **0 V**.
 - [ ] **Shunt and protection:** confirm the **100 Ω shunt**, the **1 kΩ series resistor**, the **3.6 V zener** and the **100 nF capacitor** are wired as in `docs/wiring.md`. Measure the actual shunt value and set `shunt_ohm` if needed.
 - [ ] **Boost input capacitor:** 220-470 µF fitted across the MT3608 input.
 - [ ] **LoRa antenna attached:** **never power the Heltec V3 without the 868 MHz antenna screwed on**, or you risk damaging the SX1262 amplifier.
@@ -118,14 +119,14 @@ A brook reacts to rain within hours, so the node measures every **10 minutes** (
 
 | Item | Estimate |
 | :-- | :-- |
-| Awake per cycle | about 3.5 s (boot, 0.7 s warm-up, 0.9 s DS18B20, 1.5 s radio) |
-| Current while awake | about 100-130 mA (ESP32 + 18 V boost for the TL-136 loop + EC module) |
-| Energy per cycle | about 0.1-0.13 mAh |
+| Awake per cycle | about 3 s (boot, 1 s level reading with the boost on, 1.5 s radio) |
+| Current while awake | about 40-60 mA (ESP32, sensors, radio), plus about 115 mA extra during the 1 s the boost converter is on |
+| Energy per cycle | about 0.06-0.08 mAh |
 | Sleep current | 0.05-0.2 mA (Heltec V3 board; measure it) |
-| **Per day, 10-minute cycle** | **about 17-25 mAh** |
-| Per day, 5-minute cycle | about 32-45 mAh |
+| **Per day, 10-minute cycle** | **about 10-17 mAh** |
+| Per day, 5-minute cycle | about 19-28 mAh |
 
-* 2 × 3000 mAh in parallel (about 4800 mAh usable) lasts roughly **6-9 months** at 10 minutes, or **3-5 months** at 5 minutes.
+* 2 × 3000 mAh in parallel (about 4800 mAh usable) lasts roughly **9-15 months** at 10 minutes, or **6-8 months** at 5 minutes (estimate; measure it).
 * For year-round operation without swapping batteries, add the solar kit of the full station (`../../full/`) (panel + CN3791 MPPT charger).
 * Measure it: put a µA-capable meter in series with the battery for the sleep current, and time the awake phase with the LED. If the TL-136 settles faster, shorten `warmup`.
 * Estimate: mAh per day = active mA × active s ÷ 3600 × readings per day + sleep mA × 24.
