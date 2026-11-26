@@ -123,9 +123,13 @@ With the optional MQTT block enabled the gateway publishes the same values under
 ## Radio rules
 
 The default frequency 869.525 MHz is in the 869.4–869.65 MHz sub-band (10 % duty cycle).
-The sub-band 868.0–868.6 MHz has only 1 %. Raw LoRa is **not encrypted** and has no
-acknowledgement. This is acceptable for open environmental data, but anyone can send fake
-packets on the same frequency. Check the transmit-power limits that apply to you.
+The sub-band 868.0–868.6 MHz has only 1 %. The node sends its readings as an ESPHome
+`packet_transport` frame, **encrypted** with `lora_encryption_key` from `secrets.yaml`
+(the same passphrase in the node and the gateway), as `groundwater/` and `brook/lite/` do.
+A stranger on the frequency can no longer read or simply type in a fake reading. The
+encryption is a shared passphrase without authentication or replay protection, so treat
+the data as open environmental data, not as tamper-proof. LoRa has no acknowledgement,
+so each reading is sent twice. Check the transmit-power limits that apply to you.
 
 ## Known limits
 
