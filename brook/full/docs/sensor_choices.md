@@ -94,6 +94,21 @@ Indicative 2026 prices; check current prices before ordering.
 
 This is above the original €150-200 target. Without turbidity and the air node it drops by about €60.
 
+### Where to buy
+
+Shop links checked on 26 November 2026. Prices and stock change, and Amazon/eBay listings can disappear or change seller. The cost table above uses the lowest prices (often AliExpress); Benelux shops are sometimes higher, as noted below. Parts shared with the other stations (Heltec V3, DS18B20, SEN0244, MT3608, BME280, 18650 cells, small parts, glands, enclosures) are linked in [`../../lite/BOM.md`](../../lite/BOM.md).
+
+| Part | Where to buy | Note |
+|------|--------------|------|
+| **TL-136** 4-20 mA, vented | Amazon.de: [range selectable, 12-32 V](https://www.amazon.de/Fl%C3%BCssigkeitsstandsensor-Signalausgang-Wasserstandssensor-Edelstahl-Wasserstandsregler-Reichweite/dp/B08BLQVW26), [0-2 m](https://www.amazon.de/TL-136-Detektor-F%C3%BCllstandssensor-Wasserdichter-Fl%C3%BCssigkeitsstandsender/dp/B0CZLXZ8P2); AliExpress | choose the range this design uses |
+| **SEN0189** turbidity | [DFRobot](https://www.dfrobot.com/product-1394.html) (~$10) | 5 V supply; the top of the probe is **not** waterproof, seal it yourself |
+| **JSN-SR04T** ultrasonic | [TinyTronics](https://www.tinytronics.nl/en/sensors/distance/waterproof-ultrasonic-sensor-jsn-sr04t) (€9) | only the transducer and its ~2.5 m cable are water-resistant; the board goes in the box |
+| **SDS011** PM2.5/PM10 | [TinyTronics](https://www.tinytronics.nl/en/sensors/air/dust/nova-sds011-high-precision-laser-dust-sensor), [BerryBase](https://www.berrybase.de/en/nova-fitness-sds011-fine-dust-sensor-incl.-usb-adapter), [Gotron](https://www.gotron.be/laser-pm2-5-sensor.html) | Benelux shops charge about €40-60, not the €25 in the table |
+| **ADS1115** 16-bit ADC | [TinyTronics](https://www.tinytronics.nl/en/sensors/current-voltage/ads1115-adc-module-16-bit-i2c-4-channels) (€5.50) | |
+| **ESP32 DevKit** (air node) | [Otronic ESP32 WROOM DevKit V1](https://www.otronic.nl/en/esp32-wroom-4mb-devkit-v1-board-with-wifi-bluetoot.html) (€8.99) | |
+| **CN3791** MPPT charger | bare CN3791 boards: AliExpress; alternative with the same chip: [Waveshare Solar Power Management Module at TinyTronics](https://www.tinytronics.nl/en/power/bms-and-chargers/solar-chargers/waveshare-solar-power-management-module-6-24v) | the Waveshare board has its own 14500 holder and 5 V output, so the wiring differs from `wiring.md` |
+| **Solar panel 12 V, ~10 W** | [TinyTronics 18 V 560 mA, 290×240 mm](https://www.tinytronics.nl/en/power-supplies/solar-panels/solar-panel-18v-560ma-290x240x18mm), [Gotron Perel SOL10P](https://www.gotron.be/robuust-en-multifunctioneel-zonnepaneel-10w-12v.html) (~€45) | both are "12 V" panels with ~17.6 V at the optimum point, which suits the CN3791 |
+
 ### Compared with the other stations in this repository
 
 Same basis for all three: the first station **including the gateway**, at the lower end of the price ranges, **without mounting** (post, stilling pipe, conduit, staff gauge, piezometer), which depends on the site.
