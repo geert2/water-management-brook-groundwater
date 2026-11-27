@@ -18,8 +18,8 @@ Complete these steps indoors before heading out to the field well.
 
 - [ ] **Boost converter:** with a multimeter, verify the MT3608 output reads **18.0 V DC** while the boost switch (`GPIO7`) is on (the rail is on for about 2-3 s per cycle, so use a long `warmup` temporarily or a bench supply). Also check that it reads **0 V** while the node sleeps: the 100 kΩ pull-down must keep the MOSFET switch off.
 - [ ] **Shunt and protection:** confirm the **100 Ω shunt**, the **1 kΩ series resistor**, the **3.6 V zener** and the **100 nF capacitor** are wired as in `docs/wiring.md`. Measure the actual shunt value and set `wN_shunt_ohm` in the gateway file if needed.
-- [ ] **Boost input capacitor:** 220-470 µF fitted across the MT3608 input (after the MOSFET switch).
-- [ ] **Boost MOSFET switch:** P-MOSFET (NDP6020P or AO3401A) + 2N7000 (N-MOSFET) wired as in `docs/wiring.md` section 2; no 18 V without `GPIO7` HIGH.
+- [ ] **Boost input capacitor:** 220-470 µF fitted across the MT3608 input (after the boost switch).
+- [ ] **Boost switch:** BC327 (PNP) + BC337 (NPN) wired as in `docs/wiring.md` section 2; no 18 V without `GPIO7` HIGH.
 - [ ] **LoRa antenna attached:** **never power the Heltec V3 without the 868 MHz antenna screwed on**, or you risk damaging the SX1262 amplifier.
 - [ ] **LED flash:** at power-on the node's LED flashes once per reading cycle.
 - [ ] **First packet:** the gateway log (or Home Assistant) shows readings for the node within a couple of minutes. If nothing arrives, check that both devices use the same `lora_encryption_key`.

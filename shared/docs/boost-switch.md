@@ -1,62 +1,54 @@
-# Boost converter switch (P-MOSFET + 2N7000)
+# Boost converter switch (BC327 PNP + BC337 NPN)
 
-Used by `groundwater/` and `brook/lite/`. Firmware: [`shared/esphome/heltec-v3/boost-switch.yaml`](../esphome/heltec-v3/boost-switch.yaml) (`GPIO7`, output `boost_power`).
+Used by `groundwater/` and `brook/lite/`. Firmware: [`shared/esphome/heltec-v3/boost-switch.yaml`](../esphome/heltec-v3/boost-switch.yaml) (`GPIO7`, output `boost_power`). All parts are ordinary through-hole parts with normal legs; no SMD, no adapter boards.
 
 ![Boost converter power switch](img/boost-switch.svg)
 
 ## Why
 
-The TL-136 needs 18 V, made by an MT3608 boost converter. The 4-20 mA loop is the largest load of the node: 20 mA at 18 V is about 0.36 W, which at roughly 85 % efficiency (an assumption) is about 115 mA from a 3.7 V cell.
+The TL-136 needs 18 V, made by an MT3608 boost converter. The 4-20 mA loop is the largest load of the node: 20 mA at 18 V is about 0.36 W, which at roughly 85 % efficiency (an assumption) is about 115-130 mA from the cell.
 
 * Fed from `Vext`, that current runs through the Heltec's 3.3 V regulator and Vext switch, which also power the ESP32 and the radio, and whose current rating I could not confirm.
 * Fed from the battery through its own switch, the boost converter is **on only while the level is read** (about 1 s per cycle), the battery is read **without** the loop load, and the EC probe is read while **no loop current** is present.
 
 ## Circuit
 
-* `BAT+` to the P-MOSFET **source** (S).
-* P-MOSFET **drain** (D) to the MT3608 `IN+`. The 220-470 µF capacitor goes across the MT3608 input (`IN+` to `GND`).
-* P-MOSFET **gate** (G) to `BAT+` through **100 kΩ**, and to the **drain** of the N-MOSFET.
-* N-MOSFET **source** to `GND`; its **gate** to `GPIO7` through **100 Ω**, with a **100 kΩ** pull-down from the gate to `GND`.
+| From | Part | To |
+| :--- | :--- | :--- |
+| `BAT+` | BC327 **emitter** (E) | |
+| BC327 **collector** (C) | | MT3608 `IN+` (and the 220-470 µF capacitor to `GND`) |
+| BC327 **base** (B) | 10 kΩ | `BAT+` (keeps the PNP off) |
+| BC327 **base** (B) | 470 Ω | BC337 **collector** (C) |
+| BC337 **emitter** (E) | | `GND` |
+| `GPIO7` | 4.7 kΩ | BC337 **base** (B) |
+| BC337 **base** (B) | 100 kΩ | `GND` (keeps everything off in deep sleep) |
 
-`GPIO7` HIGH: the N-MOSFET pulls the P-MOSFET gate low, and the battery reaches the boost converter. During deep sleep and reset the pin floats; the pull-down keeps everything off.
+`GPIO7` HIGH: the BC337 conducts and pulls about 5-7 mA out of the BC327 base, so the BC327 is fully on (saturated) and the battery reaches the boost converter with about 0.1-0.2 V loss. `GPIO7` LOW or floating: both transistors are off; leakage is negligible.
 
-## Which parts
+The numbers: base current of the BC327 = (3.0...4.2 V - 0.8 V) / 470 Ω ≈ 4.7-7 mA. For 130 mA that is a "forced gain" of about 20-28, well below the BC327-25's current gain (160-400), so it saturates even with a nearly empty cell. The extra 5-7 mA flows only during the ~1 s the boost converter is on: negligible. The BC327 also limits the switch-on current into the 470 µF capacitor, which is gentle on the battery.
 
-### P-MOSFET: two options
-| Option | Part | Soldering | Where |
-| :--- | :--- | :--- | :--- |
-| **A, easiest** | **NDP6020P**, TO-220 | normal legs, straight into the perfboard | [TinyTronics](https://www.tinytronics.nl/en/components/ndp6020p-power-p-mosfet-20v-24a) |
-| B | AO3401A, SOT-23 | tiny SMD part, needs an adapter board (below) | [Reichelt](https://reichelt.com/de/en/mosfet-p-ch-30v-4a-sot-23-ao-3401a-p166486.html) + [SOT-23-3 adapter](https://www.reichelt.com/de/en/shop/product/sot_23-3_adapter_0_95-mm_pitch_rm_2_54_mm-167706) |
+## Parts (Otronic has all of them)
 
-Both are "logic level": they turn fully on with only about -2.5 to -3 V on the gate, which is all a nearly empty cell (3.0 V) gives. A common P-MOSFET such as the IRF9540, IRF5305 or IRF4905 does **not** (it needs -4 to -10 V) and would stay half on.
+| Part | Value | Where |
+| :--- | :--- | :--- |
+| PNP transistor | **BC327-25** (or -40), TO-92, 800 mA | [Otronic](https://www.otronic.nl/en/pnp-transistor-bc327-25-45v-800ma-100mhz-625mw-to.html), [Reichelt](https://www.reichelt.com/de/en/transistor-pnp-to-92-45-v-0-8-a-0-625-w-bc-327-25-p4980.html) |
+| NPN transistor | **BC337-25**, TO-92 | [Otronic transistors](https://www.otronic.nl/en/transistors) ("NPN Transistor BC337-25", €0.35) |
+| Resistors | 10 kΩ, 470 Ω, 4.7 kΩ, 100 kΩ (0.25 W) | [10 kΩ](https://www.otronic.nl/en/10x-resistor-10k-ohm-1-4-watt-5-pull-up-pull-down.html), [470 Ω](https://www.otronic.nl/en/10x-resistor-470-ohm-1-4-watt-5), [4.7 kΩ](https://www.otronic.nl/en/10x-resistance-4k7-ohm-1-4-watt-5.html), [100 kΩ](https://www.otronic.nl/en/10x-resistor-100k-ohm-1-4-watt-5.html) |
 
-**NDP6020P legs** (TO-220, text facing you, legs pointing down): **G - D - S** from left to right; the metal tab is also D, so keep it from touching anything else. Check the datasheet of the part you bought. It is much bigger than needed (24 A), but that does no harm; it needs no heatsink at 0.1 A.
+**Legs** (TO-92, flat side with the text facing you, legs pointing down): **BC327 and BC337: C - B - E** (collector left, base middle, emitter right). Check the datasheet of the parts you bought; some makers differ.
 
-### N-MOSFET: 2N7000
-* **2N7000** (TO-92, normal legs): fine here, it only pulls the 100 kΩ gate resistor low. With the flat side facing you and the legs pointing down, usually **S - G - D** (left to right). Check the datasheet of the part you bought.
-* 2N7002 is the same part in SOT-23 (SMD); only use it if you already have an adapter.
+Alternatives:
+* **NPN side:** a **2N7000** MOSFET works too ([TinyTronics](https://www.tinytronics.nl/en/switches/transistors-and-mosfets/mosfets-fets/2n7000-fet-60v-200ma)): use **100 Ω** instead of the 4.7 kΩ; its legs are usually **S - G - D**.
+* **PNP side:** a logic-level P-MOSFET (e.g. AO3401A, SMD) has a slightly lower loss, but it only exists as a tiny SMD part and needs an adapter board; see the note at the end. Common through-hole P-MOSFETs such as the IRF9540, IRF5305 or IRF4905 do **not** work: they need -4 to -10 V on the gate and stay half on at a 3-4 V battery.
 
-### The P-MOSFET must turn fully on at a low battery
-At 3.0 V the gate sees only about -3 V. If you substitute another P-MOSFET, pick one with `Rds(on)` specified at `Vgs = -2.5 V`.
+## Bench test (before connecting the TL-136)
 
-## Option B: soldering the AO3401A (SOT-23) on an adapter
+1. Node asleep (`GPIO7` LOW): MT3608 `IN+` reads **0 V**.
+2. While the node measures (or with `GPIO7` tied to 3.3 V on the bench): MT3608 `IN+` reads the battery voltage minus at most about 0.2 V, and the MT3608 output **18.0 V**.
+3. If `IN+` is clearly lower (more than 0.3 V below the battery) under load, check the BC327 legs and the 470 Ω.
+
+## Note: the SMD option (AO3401A)
+
+Earlier versions of this guide used an AO3401A P-MOSFET (SOT-23, SMD) with a 2N7002/2N7000 driver. It still works if you already have one: `BAT+` to source, drain to MT3608 `IN+`, 100 kΩ gate to `BAT+`, gate to the 2N7000 drain, 2N7000 gate to `GPIO7` through 100 Ω with 100 kΩ to `GND`. To solder the SOT-23 part on a SOT23-6 adapter (for example one from the [TinyTronics adapter set](https://www.tinytronics.nl/en/tools-and-mounting/prototyping-supplies/breakout-boards/so-8-tssop8-msop8-sot23-6-sc70-sot563-to-dip-adapter-6-types)): leg 1 (G) on pad 1, leg 2 (S) on pad 3, leg 3 (D) on pad 5, and check with a multimeter which hole each pad goes to.
 
 ![SOT-23 adapter](img/sot23-adapter.svg)
-
-Skip this section if you use the NDP6020P. The AO3401A only exists as a tiny SMD part (SOT-23, about 3 × 1.5 mm). An adapter board turns it into a part with normal 2.54 mm pins.
-
-* **Simplest adapter:** a board with exactly **3 pads** for SOT-23-3, e.g. the [Roth SOT-23-3 adapter at Reichelt](https://www.reichelt.com/de/en/shop/product/sot_23-3_adapter_0_95-mm_pitch_rm_2_54_mm-167706): leg 1 on pad 1, leg 2 on pad 2, leg 3 on pad 3.
-
-* Many cheap adapters are **double-sided**: one side has a 10-pin footprint (`SOP10` / `MSOP10`, `0.5MM`), the other side a 6-pad footprint marked `SOT23`, `SOT23-6` or `0.95MM`. The SOT-23 goes on **that** side.
-* A SOT-23 has **3 legs**: two on one side (leg 1 = **G**, leg 2 = **S**), one alone on the other side (leg 3 = **D**). The AO3401A and 2N7002 both use this order.
-* On a SOT23-6 footprint use **pad 1** (G), **pad 3** (S) and **pad 5** (D, the middle pad of the other row). Pads 2, 4 and 6 stay empty.
-* Which hole each pad goes to differs between boards. **Follow the copper track or use a multimeter in continuity mode**, and write G / S / D next to the holes before you build.
-
-Soldering, step by step:
-1. Put a little solder on **one** pad (pad 1).
-2. Hold the chip with tweezers on pads 1, 3 and 5, and reheat pad 1 so the leg sinks in.
-3. Check the chip is straight, then solder the other two legs. A fine tip and flux help; a magnifier helps more.
-4. Solder pin headers into the holes you need.
-5. Check with the multimeter that G, S and D are **not** connected to each other (no solder bridge).
-
-Bench test before connecting the TL-136: with `GPIO7` LOW (node asleep) the MT3608 `IN+` must read **0 V**; while the node measures it must read the battery voltage, and the MT3608 output **18.0 V**.
